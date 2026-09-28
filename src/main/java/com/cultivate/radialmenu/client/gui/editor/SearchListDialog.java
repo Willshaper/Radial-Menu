@@ -44,7 +44,6 @@ final class SearchListDialog<T> extends Dialog<T> {
     private static final int TEXT_COLOR = 0xFFFFFFFF;
     private static final int DETAIL_COLOR = 0xFFA0A0A0;
     private static final int HEADER_COLOR = 0xFFFFD040;
-    private static final String ELLIPSIS = "...";
 
     private final StringValue search = new StringValue("");
 
@@ -132,7 +131,13 @@ final class SearchListDialog<T> extends Dialog<T> {
                 int labelWidth = width - (2 * TEXT_INSET) - (detail.isEmpty() ? 0 : detailWidth + DETAIL_GAP);
                 float textY = y + ((height - FONT_HEIGHT) / 2f);
 
-                GuiDraw.drawText(fitToWidth(font, label, labelWidth), x + TEXT_INSET, textY, 1f, TEXT_COLOR, true);
+                GuiDraw.drawText(
+                    EditorWidgets.fitToWidth(font, label, labelWidth),
+                    x + TEXT_INSET,
+                    textY,
+                    1f,
+                    TEXT_COLOR,
+                    true);
                 if (!detail.isEmpty()) {
                     GuiDraw.drawText(detail, x + width - TEXT_INSET - detailWidth, textY, 1f, DETAIL_COLOR, true);
                 }
@@ -142,12 +147,5 @@ final class SearchListDialog<T> extends Dialog<T> {
                 closeWith(option);
                 return true;
             });
-    }
-
-    private static String fitToWidth(FontRenderer font, String text, int maxWidth) {
-        if (font.getStringWidth(text) <= maxWidth) {
-            return text;
-        }
-        return font.trimStringToWidth(text, Math.max(0, maxWidth - font.getStringWidth(ELLIPSIS))) + ELLIPSIS;
     }
 }

@@ -1,9 +1,12 @@
 package com.cultivate.radialmenu.client.gui.editor;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.resources.I18n;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
@@ -33,8 +36,8 @@ import com.cultivate.radialmenu.menu.icon.SectionIcon;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 /**
- * Lists every menu and edits the selected one: name, section count, whether the switch key reaches it, and its
- * sections.
+ * Lists every menu and edits the selected one: name, section count, whether the switch key reaches it, its colors,
+ * and its sections.
  *
  * <p>
  * Adding, removing or reordering menus reopens the screen so the menu list is rebuilt.
@@ -42,20 +45,33 @@ import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 public final class MenuManager {
 
     private static final String PANEL_NAME = "menu_manager";
-    private static final int PANEL_WIDTH = 340;
+    private static final int PANEL_WIDTH = 380;
     private static final int PANEL_HEIGHT = 250;
     private static final int PADDING = 7;
-    private static final int MENU_LIST_WIDTH = 110;
+    private static final int MENU_LIST_WIDTH = 120;
+    // Given as a fixed width: MUI2 does not size rows inside a column that only has a relative width.
+    private static final int SELECTED_COLUMN_WIDTH = PANEL_WIDTH - (2 * PADDING) - MENU_LIST_WIDTH - PADDING;
     private static final int LIST_ROW_HEIGHT = 18;
+    // Kept free at the right of list rows so the scrollbar does not cover them.
+    private static final int SCROLLBAR_ROOM = 4;
+    private static final int MOVE_BUTTON_WIDTH = 12;
     private static final int ICON_SIZE = 16;
     private static final int NUMBER_WIDTH = 18;
+    private static final int TEXT_INSET = 4;
     private static final int FONT_HEIGHT = 8;
     private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int SELECTED_COLOR = 0x603C78D8;
-    private static final int SWATCH_WIDTH = 30;
+    private static final int DETAIL_COLOR = 0xFFA0A0A0;
+    private static final int SELECTED_FILL = 0x503C78D8;
+    private static final int SELECTED_ACCENT = 0xFF3C78D8;
+    private static final int ACCENT_WIDTH = 2;
+    private static final int WARNING_COLOR = 0xFFFFAA40;
+    private static final int WARNING_HEIGHT = 18;
+    private static final int SWATCH_WIDTH = 28;
     private static final int SWATCH_INSET = 3;
+    private static final int RESET_WIDTH = 40;
     // Drawn under each swatch so see-through colors look see-through.
     private static final int SWATCH_BACKDROP = 0xFF8B8B8B;
+    private static final String SUBMENU_MARK = "↳ ";
 
     private final MenuStore store = RadialMenuClient.getMenuStore();
     private final RadialMenu selected;
@@ -124,7 +140,7 @@ public final class MenuManager {
                     .childPadding(2)
                     .child(
                         EditorWidgets.button("radialmenu.manager.new", this::createMenu)
-                            .expanded())
+                            .width(MENU_LIST_WIDTH - (2 * (EditorWidgets.ROW_HEIGHT + 2))))
                     .child(
                         new ButtonWidget<>().size(EditorWidgets.ROW_HEIGHT)
                             .overlay(IKey.str("▲"))
@@ -155,31 +171,48 @@ public final class MenuManager {
                     }));
     }
 
+    /**
+     * A menu in the list, drawn like the section rows: name on the left, section count on the right. The selected menu
+     * gets a tinted fill and an accent bar. Menus only reachable as submenus are marked with an arrow.
+     */
     private ButtonWidget<?> createMenuButton(RadialMenu menu) {
-        ButtonWidget<?> button = new ButtonWidget<>().widthRel(1f)
+        return new ButtonWidget<>().widthRelOffset(1f, -SCROLLBAR_ROOM)
             .height(LIST_ROW_HEIGHT)
-            .overlay(
-                IKey.dynamic(menu::getName)
-                    .alignment(Alignment.CenterLeft))
+            .overlay((context, x, y, width, height, widgetTheme) -> {
+                FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+                String name = (menu.isInCycle() ? "" : SUBMENU_MARK) + menu.getName();
+                String count = String.valueOf(menu.getSectionCount());
+                int countWidth = font.getStringWidth(count);
+                float textY = y + ((height - FONT_HEIGHT) / 2f);
+
+                if (menu == selected) {
+                    GuiDraw.drawRect(x, y, width, height, SELECTED_FILL);
+                    GuiDraw.drawRect(x, y, ACCENT_WIDTH, height, SELECTED_ACCENT);
+                }
+                GuiDraw.drawText(
+                    EditorWidgets.fitToWidth(font, name, width - (3 * TEXT_INSET) - countWidth),
+                    x + TEXT_INSET + ACCENT_WIDTH,
+                    textY,
+                    1f,
+                    TEXT_COLOR,
+                    true);
+                GuiDraw.drawText(count, x + width - TEXT_INSET - countWidth, textY, 1f, DETAIL_COLOR, true);
+            })
+            .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.manager.menu_tooltip")))
             .onMousePressed(mouseButton -> {
                 if (menu != selected) {
                     open(menu);
                 }
                 return true;
             });
-
-        if (menu == selected) {
-            button.background(
-                (context, x, y, width, height, widgetTheme) -> GuiDraw.drawRect(x, y, width, height, SELECTED_COLOR));
-        }
-        return button;
     }
 
     private Flow buildSelectedColumn() {
         return Flow.column()
-            .expanded()
+            .width(SELECTED_COLUMN_WIDTH)
             .heightRel(1f)
             .childPadding(3)
+            .collapseDisabledChild()
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.editor.name",
@@ -207,6 +240,16 @@ public final class MenuManager {
                             return true;
                         })))
             .child(
+                IKey.dynamic(this::getHiddenSectionsWarning)
+                    .color(WARNING_COLOR)
+                    .alignment(Alignment.CenterLeft)
+                    .asWidget()
+                    .widthRel(1f)
+                    .height(WARNING_HEIGHT)
+                    .setEnabledIf(
+                        warning -> !selected.getHiddenSectionsWithContent()
+                            .isEmpty()))
+            .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.manager.in_cycle",
                     EditorWidgets
@@ -221,12 +264,24 @@ public final class MenuManager {
                     createColorSwatch(RingColor.HOVER),
                     createColorSwatch(RingColor.CENTER),
                     EditorWidgets.button("radialmenu.manager.reset_colors", MenuManager::resetColors)
-                        .expanded()))
+                        .width(RESET_WIDTH)))
             .child(
                 new ListWidget<>().widthRel(1f)
                     .expanded()
                     .collapseDisabledChild()
-                    .children(RadialMenu.MAX_SECTIONS, this::createSectionButton));
+                    .children(RadialMenu.MAX_SECTIONS, this::createSectionRow));
+    }
+
+    /**
+     * @return a warning naming the sections, counted from 1, that are hidden by the section count but not empty
+     */
+    private String getHiddenSectionsWarning() {
+        String numbers = selected.getHiddenSectionsWithContent()
+            .stream()
+            .map(index -> String.valueOf(index + 1))
+            .collect(Collectors.joining(", "));
+
+        return I18n.format("radialmenu.manager.hidden_warning", numbers);
     }
 
     /**
@@ -266,30 +321,74 @@ public final class MenuManager {
         ConfigurationManager.save(RadialMenuConfig.class);
     }
 
-    private ButtonWidget<?> createSectionButton(int index) {
-        return new ButtonWidget<>().widthRel(1f)
+    /**
+     * One section in the list: a button that edits it, and arrows that move it up or down the ring.
+     */
+    private Flow createSectionRow(int index) {
+        return Flow.row()
+            .widthRelOffset(1f, -SCROLLBAR_ROOM)
             .height(LIST_ROW_HEIGHT)
-            .overlay(sectionRowDrawable(index))
-            .setEnabledIf(button -> index < selected.getSectionCount())
+            .childPadding(1)
+            .setEnabledIf(row -> index < selected.getSectionCount())
+            .child(
+                new ButtonWidget<>().width(SELECTED_COLUMN_WIDTH - SCROLLBAR_ROOM - (2 * (MOVE_BUTTON_WIDTH + 1)))
+                    .heightRel(1f)
+                    .overlay(sectionRowDrawable(index))
+                    .onMousePressed(mouseButton -> {
+                        store.save();
+                        SectionEditor.open(selected, index, true);
+                        return true;
+                    }))
+            .child(createMoveButton(index, -1, "▲"))
+            .child(createMoveButton(index, 1, "▼"));
+    }
+
+    private ButtonWidget<?> createMoveButton(int index, int offset, String arrow) {
+        return new ButtonWidget<>().width(MOVE_BUTTON_WIDTH)
+            .heightRel(1f)
+            .overlay(IKey.str(arrow))
+            .tooltip(
+                tooltip -> tooltip
+                    .addLine(I18n.format(offset < 0 ? "radialmenu.manager.move_up" : "radialmenu.manager.move_down")))
             .onMousePressed(mouseButton -> {
-                store.save();
-                SectionEditor.open(selected, index, true);
+                moveSection(index, offset);
                 return true;
             });
+    }
+
+    /**
+     * Swaps a section with its neighbour. Moving past either end of the ring does nothing.
+     */
+    private void moveSection(int index, int offset) {
+        int target = index + offset;
+
+        if ((target < 0) || (target >= selected.getSectionCount())) {
+            return;
+        }
+        selected.swapSections(index, target);
+        store.save();
     }
 
     private IDrawable sectionRowDrawable(int index) {
         return (context, x, y, width, height, widgetTheme) -> {
             MenuSection section = selected.getSection(index);
             SectionIcon icon = section.getIcon();
+            FontRenderer font = Minecraft.getMinecraft().fontRenderer;
             float textY = y + ((height - FONT_HEIGHT) / 2f);
             float iconX = x + NUMBER_WIDTH;
+            int textX = Math.round(iconX + ICON_SIZE + TEXT_INSET);
 
             GuiDraw.drawText((index + 1) + ".", x + 3, textY, 1f, TEXT_COLOR, true);
             if (icon != null) {
                 icon.draw(iconX + (ICON_SIZE / 2f), y + (height / 2f), ICON_SIZE);
             }
-            GuiDraw.drawText(describeSection(section), iconX + ICON_SIZE + 4, textY, 1f, TEXT_COLOR, true);
+            GuiDraw.drawText(
+                EditorWidgets.fitToWidth(font, describeSection(section), (x + width) - textX - TEXT_INSET),
+                textX,
+                textY,
+                1f,
+                section.isEmpty() ? DETAIL_COLOR : TEXT_COLOR,
+                true);
         };
     }
 

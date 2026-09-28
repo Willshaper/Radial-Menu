@@ -35,8 +35,11 @@ Each section has a name, an icon and an action.
 ## Menus
 
 The menu manager adds, renames, reorders and deletes menus, sets each menu's section count (2 to 24) and whether the
-switch key reaches it (*Switchable*). Menus that aren't switchable are only reachable as submenus. Lowering the
-section count hides sections without deleting them.
+switch key reaches it (*Switchable*). Menus that aren't switchable are only reachable as submenus and are marked with
+↳ in the list. The arrows next to each section move it around the ring.
+
+Lowering the section count hides sections without deleting them. If a hidden section still has something in it, the
+menu manager says which ones, so they aren't forgotten.
 
 Menus are stored in `config/radialmenu/menus.json`. A file that can't be read is renamed to
 `menus.json.broken-<time>` and a fresh default menu is created, so nothing is silently overwritten.

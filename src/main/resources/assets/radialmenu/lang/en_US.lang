@@ -59,6 +59,10 @@ radialmenu.manager.sections=Sections
 radialmenu.manager.in_cycle=Switchable
 radialmenu.manager.colors=Colors
 radialmenu.manager.reset_colors=Reset
+radialmenu.manager.hidden_warning=⚠ Sections %s are hidden but not empty. Raise the count to see them.
+radialmenu.manager.move_up=Move up
+radialmenu.manager.move_down=Move down
+radialmenu.manager.menu_tooltip=The number is how many sections it has. ↳ marks a menu only reachable as a submenu.
 
 radialmenu.manager.empty_section=(empty)
 radialmenu.manager.default_menu_name=New Menu

@@ -79,6 +79,31 @@ public class RadialMenu {
     }
 
     /**
+     * Swaps two sections, for example to move one up or down in the editor.
+     */
+    public void swapSections(int first, int second) {
+        MenuSection firstSection = getSection(first);
+
+        setSection(first, getSection(second));
+        setSection(second, firstSection);
+    }
+
+    /**
+     * @return the indexes of sections past the section count that still have something in them
+     */
+    public List<Integer> getHiddenSectionsWithContent() {
+        List<Integer> hidden = new ArrayList<>();
+
+        for (int i = sectionCount; i < sections.size(); i++) {
+            if (!sections.get(i)
+                .isEmpty()) {
+                hidden.add(i);
+            }
+        }
+        return hidden;
+    }
+
+    /**
      * @return every stored section, including hidden ones past the section count
      */
     public List<MenuSection> getStoredSections() {

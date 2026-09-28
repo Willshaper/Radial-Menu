@@ -3,6 +3,8 @@ package com.cultivate.radialmenu.client.gui.editor;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
+import net.minecraft.client.gui.FontRenderer;
+
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.utils.Alignment;
@@ -15,10 +17,11 @@ import com.cleanroommc.modularui.widgets.layout.Flow;
 final class EditorWidgets {
 
     static final int ROW_HEIGHT = 16;
-    static final int LABEL_WIDTH = 50;
+    static final int LABEL_WIDTH = 58;
     static final int HINT_COLOR = 0xFF707070;
 
     private static final int RIGHT_BUTTON = 1;
+    private static final String ELLIPSIS = "...";
 
     private EditorWidgets() {}
 
@@ -63,6 +66,16 @@ final class EditorWidgets {
                 onClick.run();
                 return true;
             });
+    }
+
+    /**
+     * @return the text, cut short with an ellipsis if it is wider than {@code maxWidth} pixels
+     */
+    static String fitToWidth(FontRenderer font, String text, int maxWidth) {
+        if (font.getStringWidth(text) <= maxWidth) {
+            return text;
+        }
+        return font.trimStringToWidth(text, Math.max(0, maxWidth - font.getStringWidth(ELLIPSIS))) + ELLIPSIS;
     }
 
     static <E extends Enum<E>> E cycle(E value, int offset) {
