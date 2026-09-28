@@ -333,8 +333,7 @@ public final class MenuManager {
             .childPadding(1)
             .setEnabledIf(row -> index < selected.getSectionCount())
             .child(
-                new ButtonWidget<>()
-                    .width(SELECTED_COLUMN_WIDTH - EditorWidgets.LIST_ROW_INSET - (2 * (MOVE_BUTTON_WIDTH + 1)))
+                new ButtonWidget<>().expanded()
                     .heightRel(1f)
                     .overlay(sectionRowDrawable(index))
                     .onMousePressed(mouseButton -> {

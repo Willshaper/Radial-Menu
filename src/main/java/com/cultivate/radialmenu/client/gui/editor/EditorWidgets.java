@@ -23,7 +23,7 @@ final class EditorWidgets {
     static final int HINT_COLOR = 0xFF707070;
     // List scrollbars get a fixed width, and list rows leave this much room so the scrollbar never covers them.
     static final int SCROLLBAR_THICKNESS = 4;
-    static final int LIST_ROW_INSET = SCROLLBAR_THICKNESS + 2;
+    static final int LIST_ROW_INSET = SCROLLBAR_THICKNESS + 4;
 
     private static final int RIGHT_BUTTON = 1;
     private static final String ELLIPSIS = "...";
