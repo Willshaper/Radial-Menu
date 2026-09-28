@@ -73,6 +73,7 @@ public final class SectionEditor {
     private final boolean returnToManager;
     private final MenuStore store = RadialMenuClient.getMenuStore();
     private ModularPanel panel;
+    private boolean clearArmed;
 
     private String label;
     private IconKind iconKind = IconKind.NONE;
@@ -416,7 +417,15 @@ public final class SectionEditor {
                 EditorWidgets.button("radialmenu.editor.save", this::save)
                     .expanded())
             .child(
-                EditorWidgets.button("radialmenu.editor.clear", this::clear)
+                new ButtonWidget<>().height(EditorWidgets.ROW_HEIGHT)
+                    .overlay(
+                        IKey.dynamic(
+                            () -> I18n
+                                .format(clearArmed ? "radialmenu.editor.clear_confirm" : "radialmenu.editor.clear")))
+                    .onMousePressed(mouseButton -> {
+                        clear();
+                        return true;
+                    })
                     .expanded())
             .child(
                 EditorWidgets.button("radialmenu.editor.cancel", this::finish)
@@ -429,7 +438,14 @@ public final class SectionEditor {
         finish();
     }
 
+    /**
+     * Empties the section on the second click; the first only arms the button, so a stray click loses nothing.
+     */
     private void clear() {
+        if (!clearArmed) {
+            clearArmed = true;
+            return;
+        }
         menu.setSection(index, MenuSection.EMPTY);
         store.save();
         finish();

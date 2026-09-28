@@ -49,6 +49,7 @@ radialmenu.editor.pick_submenu=Choose a submenu
 radialmenu.editor.default_submenu_name=Submenu
 radialmenu.editor.save=Save
 radialmenu.editor.clear=Clear
+radialmenu.editor.clear_confirm=Click again
 radialmenu.editor.cancel=Cancel
 
 radialmenu.manager.menus=Menus
