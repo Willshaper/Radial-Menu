@@ -1,0 +1,20 @@
+[
+  {
+    "modid": "radialmenu",
+    "name": "Radial Menu",
+    "description": "A configurable radial menu. Hold a key to open it, click a section to run a command, send a chat message, press a keybind, select a hotbar slot or open a submenu. Supports several menus, any number of sections and item or text icons. Client-side only.",
+    "version": "${modVersion}",
+    "mcversion": "${minecraftVersion}",
+    "authorList": [
+      "Cultivate"
+    ],
+    "requiredMods": [
+      "gtnhlib",
+      "modularui2"
+    ],
+    "dependencies": [
+      "gtnhlib",
+      "modularui2"
+    ]
+  }
+]

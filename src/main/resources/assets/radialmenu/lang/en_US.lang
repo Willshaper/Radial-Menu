@@ -1,0 +1,59 @@
+key.categories.radialmenu=Radial Menu
+key.radialmenu.open=Open Radial Menu (hold)
+key.radialmenu.switch=Switch Menu (while open)
+key.radialmenu.editor=Open Menu Manager
+
+radialmenu.action.none=Nothing
+radialmenu.action.command=Command
+radialmenu.action.chat=Chat Message
+radialmenu.action.keybind=Press Keybind
+radialmenu.action.hotbar=Select Hotbar Slot
+radialmenu.action.submenu=Open Submenu
+radialmenu.action.hotbar.describe=Hotbar slot %s
+radialmenu.action.submenu.describe=Open %s
+radialmenu.action.submenu.missing=Missing submenu
+radialmenu.action.keybind.missing=Radial Menu: no keybinding named %s exists.
+
+radialmenu.keybind.mode.tap=Tap
+radialmenu.keybind.mode.toggle=Toggle
+
+radialmenu.hint.back=Click to go back
+radialmenu.hint.switch=Scroll or press %s to switch menus
+radialmenu.hint.edit=Shift-click a section to edit it
+radialmenu.hint.empty=Empty: click to set it up
+
+radialmenu.editor.search=Search...
+radialmenu.editor.section_title=Section %s of %s
+radialmenu.editor.name=Name
+radialmenu.editor.icon=Icon
+radialmenu.editor.icon.none=None
+radialmenu.editor.icon.item=Item
+radialmenu.editor.icon.text=Text
+radialmenu.editor.item=Item
+radialmenu.editor.use_held=Held Item
+radialmenu.editor.drag_hint=or drag from NEI
+radialmenu.editor.text=Text
+radialmenu.editor.action=Action
+radialmenu.editor.command=Command
+radialmenu.editor.message=Message
+radialmenu.editor.keybind=Keybind
+radialmenu.editor.slot=Slot
+radialmenu.editor.submenu=Submenu
+radialmenu.editor.new_submenu=New
+radialmenu.editor.choose=Choose...
+radialmenu.editor.missing=Missing: %s
+radialmenu.editor.pick_keybind=Choose a keybind
+radialmenu.editor.pick_submenu=Choose a submenu
+radialmenu.editor.default_submenu_name=Submenu
+radialmenu.editor.save=Save
+radialmenu.editor.clear=Clear
+radialmenu.editor.cancel=Cancel
+
+radialmenu.manager.menus=Menus
+radialmenu.manager.new=New
+radialmenu.manager.delete=Delete Menu
+radialmenu.manager.delete_confirm=Click again to delete
+radialmenu.manager.sections=Sections
+radialmenu.manager.in_cycle=Switchable
+radialmenu.manager.empty_section=(empty)
+radialmenu.manager.default_menu_name=New Menu

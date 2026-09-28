@@ -1,0 +1,4 @@
+// The GTNH Maven is added by the gtnhconvention plugin (includeWellKnownRepositories = true).
+
+repositories {
+}
