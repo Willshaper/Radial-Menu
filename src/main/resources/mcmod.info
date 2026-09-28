@@ -6,7 +6,7 @@
     "version": "${modVersion}",
     "mcversion": "${minecraftVersion}",
     "authorList": [
-      "Cultivate"
+      "Willshaper"
     ],
     "requiredMods": [
       "gtnhlib",
