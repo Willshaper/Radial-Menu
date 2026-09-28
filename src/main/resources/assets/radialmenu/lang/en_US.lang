@@ -21,6 +21,8 @@ radialmenu.hint.back=Click to go back
 radialmenu.hint.switch=Scroll or press %s to switch menus
 radialmenu.hint.edit=Shift-click a section to edit it
 radialmenu.hint.empty=Empty: click to set it up
+radialmenu.hint.shift_section=Click to edit this section
+radialmenu.hint.shift_center=Click to open the menu manager
 
 radialmenu.editor.search=Search...
 radialmenu.editor.section_title=Section %s of %s
@@ -55,5 +57,11 @@ radialmenu.manager.delete=Delete Menu
 radialmenu.manager.delete_confirm=Click again to delete
 radialmenu.manager.sections=Sections
 radialmenu.manager.in_cycle=Switchable
+radialmenu.manager.colors=Colors
+
 radialmenu.manager.empty_section=(empty)
 radialmenu.manager.default_menu_name=New Menu
+
+radialmenu.color.section=Section color
+radialmenu.color.hover=Hover color
+radialmenu.color.center=Center color

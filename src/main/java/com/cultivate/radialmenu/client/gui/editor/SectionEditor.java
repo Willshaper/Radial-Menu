@@ -64,7 +64,8 @@ public final class SectionEditor {
     private static final String PANEL_NAME = "section_editor";
     private static final int PANEL_WIDTH = 260;
     private static final int PADDING = 7;
-    private static final int TEXT_ICON_MAX_LENGTH = 6;
+    // Room for a few characters plus Angelica's color codes, such as &#FF8800TP.
+    private static final int TEXT_ICON_MAX_LENGTH = 32;
     private static final int COLOR_SWATCH_INSET = 3;
 
     private final RadialMenu menu;

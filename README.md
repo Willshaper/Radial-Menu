@@ -10,7 +10,8 @@ GL state calls.
 - **Hold R** to open the menu. Point at a section and **left click** to run it. Letting go of R closes the menu.
 - **Scroll** or press **Tab** (Shift+Tab to go back) to switch between menus.
 - Sections can open **submenus**. Right click, or click the center, to go back.
-- **Shift + click** a section to edit it. Clicking an empty section also edits it.
+- **Shift + click** a section to edit it. While Shift is held the hovered section gets a yellow edge and the text
+  under the ring says the click will edit. Clicking an empty section also edits it.
 - **Shift + click** the center, or use the (unbound by default) *Open Menu Manager* key, to manage menus.
 
 All three keys are under *Radial Menu* in Controls.
@@ -19,7 +20,9 @@ All three keys are under *Radial Menu* in Controls.
 
 Each section has a name, an icon and an action.
 
-- **Icons**: an item (drag it in from NEI, or use the item in your hand) or a short piece of colored text.
+- **Icons**: an item (drag it in from NEI, or use the item in your hand) or a short piece of colored text. With
+  Angelica 2.2.19 or newer, text icons and section names can use its color codes, such as `&#FF8800TP` or `&q` for
+  rainbow text.
 - **Actions**:
   - *Command*: runs like typing it in chat (client commands first, then the server).
   - *Chat Message*: sends a message.
@@ -40,8 +43,11 @@ Menus are stored in `config/radialmenu/menus.json`. A file that can't be read is
 
 ## Settings
 
-Ring size, center size, colors, the open animation, labels and whether the last used menu is remembered are in the
-mod's config screen (Mods → Radial Menu → Config) or `config/radialmenu.cfg`.
+The ring's colors are easiest to change in the menu manager: click a swatch next to *Colors* to open a color picker.
+
+Ring size, center size, colors, the open animation, labels and whether the last used menu is remembered are also in
+the mod's config screen (Mods → Radial Menu → Config) or `config/radialmenu.cfg`. Colors there are written like
+`#3C78D8` (the `#` is optional, and `#38D` works too), with a separate opacity from 0 to 100%.
 
 ## Building
 

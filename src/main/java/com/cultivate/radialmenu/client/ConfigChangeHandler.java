@@ -3,7 +3,6 @@ package com.cultivate.radialmenu.client;
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.cultivate.radialmenu.config.RadialMenuConfig;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
-import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -20,7 +19,7 @@ public class ConfigChangeHandler {
             return;
         }
         try {
-            ConfigurationManager.registerConfig(RadialMenuConfig.class);
+            RadialMenuConfig.load();
         } catch (ConfigException e) {
             RadialMenuMod.LOG.error("failed to reload the config", e);
         }
