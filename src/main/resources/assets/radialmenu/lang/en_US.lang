@@ -58,6 +58,7 @@ radialmenu.manager.delete_confirm=Click again to delete
 radialmenu.manager.sections=Sections
 radialmenu.manager.in_cycle=Switchable
 radialmenu.manager.colors=Colors
+radialmenu.manager.reset_colors=Reset
 
 radialmenu.manager.empty_section=(empty)
 radialmenu.manager.default_menu_name=New Menu

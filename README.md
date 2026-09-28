@@ -43,7 +43,8 @@ Menus are stored in `config/radialmenu/menus.json`. A file that can't be read is
 
 ## Settings
 
-The ring's colors are easiest to change in the menu manager: click a swatch next to *Colors* to open a color picker.
+The ring's colors are easiest to change in the menu manager: click a swatch next to *Colors* to open a color picker,
+or click *Reset* to go back to the default colors.
 
 Ring size, center size, colors, the open animation, labels and whether the last used menu is remembered are also in
 the mod's config screen (Mods → Radial Menu → Config) or `config/radialmenu.cfg`. Colors there are written like

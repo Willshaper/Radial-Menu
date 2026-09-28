@@ -6,16 +6,19 @@ package com.cultivate.radialmenu.config;
  */
 public enum RingColor {
 
-    SECTION("radialmenu.color.section", 0x141414),
-    HOVER("radialmenu.color.hover", 0x3C78D8),
-    CENTER("radialmenu.color.center", 0x141414);
+    // Keep the defaults in step with the field defaults in RadialMenuConfig.
+    SECTION("radialmenu.color.section", 0x141414, 63),
+    HOVER("radialmenu.color.hover", 0x3C78D8, 75),
+    CENTER("radialmenu.color.center", 0x141414, 75);
 
     private final String langKey;
     private final int defaultRgb;
+    private final int defaultOpacity;
 
-    RingColor(String langKey, int defaultRgb) {
+    RingColor(String langKey, int defaultRgb, int defaultOpacity) {
         this.langKey = langKey;
         this.defaultRgb = defaultRgb;
+        this.defaultOpacity = defaultOpacity;
     }
 
     public String getLangKey() {
@@ -32,6 +35,14 @@ public enum RingColor {
     public void setArgb(int argb) {
         setText(RadialMenuConfig.formatRgb(argb));
         setOpacity(RadialMenuConfig.toOpacityPercent(argb));
+    }
+
+    /**
+     * Puts the color and opacity back to their defaults. The caller saves the config.
+     */
+    public void reset() {
+        setText(RadialMenuConfig.formatRgb(defaultRgb));
+        setOpacity(defaultOpacity);
     }
 
     /**

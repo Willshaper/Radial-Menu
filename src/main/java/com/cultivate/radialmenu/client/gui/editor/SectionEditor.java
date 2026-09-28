@@ -359,18 +359,12 @@ public final class SectionEditor {
                     "keybind_picker",
                     I18n.format("radialmenu.editor.pick_keybind"),
                     bindings,
-                    SectionEditor::describeBinding,
+                    binding -> I18n.format(binding.getKeyCategory()),
+                    binding -> I18n.format(binding.getKeyDescription()),
+                    binding -> GameSettings.getKeyDisplayString(binding.getKeyCode()),
                     binding -> keyDescription = binding.getKeyDescription()),
                 true)
             .openPanel();
-    }
-
-    private static String describeBinding(KeyBinding binding) {
-        return I18n.format(binding.getKeyCategory()) + ": "
-            + I18n.format(binding.getKeyDescription())
-            + " ["
-            + GameSettings.getKeyDisplayString(binding.getKeyCode())
-            + "]";
     }
 
     private String getSubmenuButtonText() {
@@ -396,7 +390,9 @@ public final class SectionEditor {
                     "submenu_picker",
                     I18n.format("radialmenu.editor.pick_submenu"),
                     menus,
+                    null,
                     RadialMenu::getName,
+                    null,
                     picked -> submenuId = picked.getId()),
                 true)
             .openPanel();

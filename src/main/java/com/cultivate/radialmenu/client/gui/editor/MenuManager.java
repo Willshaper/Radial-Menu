@@ -219,7 +219,9 @@ public final class MenuManager {
                     "radialmenu.manager.colors",
                     createColorSwatch(RingColor.SECTION),
                     createColorSwatch(RingColor.HOVER),
-                    createColorSwatch(RingColor.CENTER)))
+                    createColorSwatch(RingColor.CENTER),
+                    EditorWidgets.button("radialmenu.manager.reset_colors", MenuManager::resetColors)
+                        .expanded()))
             .child(
                 new ListWidget<>().widthRel(1f)
                     .expanded()
@@ -255,6 +257,13 @@ public final class MenuManager {
                     .openPanel();
                 return true;
             });
+    }
+
+    private static void resetColors() {
+        for (RingColor color : RingColor.values()) {
+            color.reset();
+        }
+        ConfigurationManager.save(RadialMenuConfig.class);
     }
 
     private ButtonWidget<?> createSectionButton(int index) {
