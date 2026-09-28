@@ -32,7 +32,6 @@ import com.cultivate.radialmenu.menu.icon.TextIcon;
  */
 final class RadialWidget extends Widget<RadialWidget> {
 
-    private static final double FULL_CIRCLE = 2 * Math.PI;
     // Segments used for a full circle; arcs use their share of it.
     private static final int CIRCLE_SEGMENTS = 96;
     private static final int MIN_ARC_SEGMENTS = 4;
@@ -46,8 +45,7 @@ final class RadialWidget extends Widget<RadialWidget> {
     private static final int TEXT_COLOR = 0xFFFFFF;
     private static final int HINT_COLOR = 0xAAAAAA;
     // Rim and hint color while Shift is held, marking that a click edits instead of runs.
-    private static final int EDIT_COLOR = 0xFFFFD040;
-    private static final int EDIT_TEXT_COLOR = 0xFFD040;
+    private static final int EDIT_COLOR = 0xFFD040;
     private static final int PLACEHOLDER_COLOR = 0x808080;
     private static final String EMPTY_SECTION_MARK = "+";
     private static final String BACK_MARK = "←";
@@ -64,7 +62,7 @@ final class RadialWidget extends Widget<RadialWidget> {
     @Override
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
         RadialLayout layout = screen.createLayout(screen.getOpenScale());
-        int hovered = layout.sectionAt(context.getAbsMouseX(), context.getAbsMouseY());
+        int hovered = screen.getHoveredSection();
         boolean editing = Interactable.hasShiftDown();
 
         drawRing(layout, hovered, editing);
@@ -97,7 +95,7 @@ final class RadialWidget extends Widget<RadialWidget> {
                     end,
                     layout.outerRadius,
                     layout.outerRadius + HOVER_RIM_WIDTH,
-                    editing ? EDIT_COLOR : (hoverColor | 0xFF000000));
+                    (editing ? EDIT_COLOR : hoverColor) | 0xFF000000);
             }
         }
         if (layout.centerRadius > 0) {
@@ -106,7 +104,7 @@ final class RadialWidget extends Widget<RadialWidget> {
             drawArc(
                 layout,
                 0,
-                FULL_CIRCLE,
+                RadialLayout.FULL_CIRCLE,
                 0,
                 layout.centerRadius,
                 centerActive ? hoverColor : RingColor.CENTER.getArgb());
@@ -120,8 +118,9 @@ final class RadialWidget extends Widget<RadialWidget> {
     private static void drawArc(RadialLayout layout, double startAngle, double endAngle, float innerRadius,
         float outerRadius, int argb) {
         Tessellator tessellator = Tessellator.instance;
-        int segments = Math
-            .max(MIN_ARC_SEGMENTS, (int) Math.ceil((CIRCLE_SEGMENTS * (endAngle - startAngle)) / FULL_CIRCLE));
+        int segments = Math.max(
+            MIN_ARC_SEGMENTS,
+            (int) Math.ceil((CIRCLE_SEGMENTS * (endAngle - startAngle)) / RadialLayout.FULL_CIRCLE));
 
         tessellator.startDrawing(GL11.GL_TRIANGLE_STRIP);
         tessellator.setColorRGBA_I(argb & 0xFFFFFF, argb >>> 24);
@@ -189,7 +188,7 @@ final class RadialWidget extends Widget<RadialWidget> {
                     hovered == RadialLayout.CENTER ? "radialmenu.hint.shift_center" : "radialmenu.hint.shift_section"),
                 layout.centerX,
                 hintY,
-                EDIT_TEXT_COLOR);
+                EDIT_COLOR);
         } else if (RadialMenuConfig.showLabels) {
             if (hovered == RadialLayout.CENTER) {
                 drawCenteredString(getCenterHint(), layout.centerX, hintY, HINT_COLOR);

@@ -66,7 +66,7 @@ public class ClientTickHandler {
         if (openKeyDown && !waitingForKeyRelease) {
             waitingForKeyRelease = true;
             RadialScreen.open();
-        } else if (KeyBindings.EDITOR.isPressed()) {
+        } else if (KeyBindings.MANAGER.isPressed()) {
             MenuManager.open(null);
         }
     }

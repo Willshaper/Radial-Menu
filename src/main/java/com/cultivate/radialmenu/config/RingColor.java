@@ -1,5 +1,7 @@
 package com.cultivate.radialmenu.config;
 
+import com.cultivate.radialmenu.util.ColorMath;
+
 /**
  * The ring's three configurable colors, each stored in {@link RadialMenuConfig} as a {@code #RRGGBB} text and an
  * opacity percentage.
@@ -43,19 +45,6 @@ public enum RingColor {
     public void reset() {
         setText(ColorMath.formatRgb(defaultRgb));
         setOpacity(defaultOpacity);
-    }
-
-    /**
-     * Rewrites the stored text in the standard {@code #RRGGBB} form.
-     *
-     * @return true if the text changed
-     */
-    boolean normalize() {
-        String before = getText();
-        String after = ColorMath.formatRgb(ColorMath.parseRgb(before, defaultRgb));
-
-        setText(after);
-        return !after.equals(before);
     }
 
     private String getText() {

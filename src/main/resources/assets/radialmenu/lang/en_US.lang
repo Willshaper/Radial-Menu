@@ -1,7 +1,7 @@
 key.categories.radialmenu=Radial Menu
 key.radialmenu.open=Open Radial Menu (hold)
 key.radialmenu.switch=Switch Menu (while open)
-key.radialmenu.editor=Open Menu Manager
+key.radialmenu.manager=Open Menu Manager
 
 radialmenu.action.none=Nothing
 radialmenu.action.command=Command
@@ -42,6 +42,7 @@ radialmenu.editor.keybind=Keybind
 radialmenu.editor.slot=Slot
 radialmenu.editor.submenu=Submenu
 radialmenu.editor.new_submenu=New
+radialmenu.editor.new_submenu_pending=New: %s
 radialmenu.editor.choose=Choose...
 radialmenu.editor.missing=Missing: %s
 radialmenu.editor.pick_keybind=Choose a keybind

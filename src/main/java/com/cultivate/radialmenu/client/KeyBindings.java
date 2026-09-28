@@ -15,13 +15,13 @@ public final class KeyBindings {
     /** While the menu is open, switches to the next menu. Shift switches back. */
     public static final KeyBinding SWITCH = new KeyBinding("key.radialmenu.switch", Keyboard.KEY_TAB, CATEGORY);
     /** Opens the menu manager. */
-    public static final KeyBinding EDITOR = new KeyBinding("key.radialmenu.editor", Keyboard.KEY_NONE, CATEGORY);
+    public static final KeyBinding MANAGER = new KeyBinding("key.radialmenu.manager", Keyboard.KEY_NONE, CATEGORY);
 
     private KeyBindings() {}
 
     static void register() {
         ClientRegistry.registerKeyBinding(OPEN);
         ClientRegistry.registerKeyBinding(SWITCH);
-        ClientRegistry.registerKeyBinding(EDITOR);
+        ClientRegistry.registerKeyBinding(MANAGER);
     }
 }

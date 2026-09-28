@@ -38,11 +38,7 @@ final class SearchListDialog<T> extends Dialog<T> {
     private static final int PADDING = 7;
     private static final int ROW_HEIGHT = 14;
     private static final int HEADER_HEIGHT = 13;
-    private static final int TEXT_INSET = 4;
     private static final int DETAIL_GAP = 8;
-    private static final int FONT_HEIGHT = 8;
-    private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int DETAIL_COLOR = 0xFFA0A0A0;
     private static final int HEADER_COLOR = 0xFFFFD040;
 
     private final StringValue search = new StringValue("");
@@ -130,18 +126,25 @@ final class SearchListDialog<T> extends Dialog<T> {
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 FontRenderer font = Minecraft.getMinecraft().fontRenderer;
                 int detailWidth = font.getStringWidth(detail);
-                int labelWidth = width - (2 * TEXT_INSET) - (detail.isEmpty() ? 0 : detailWidth + DETAIL_GAP);
-                float textY = y + ((height - FONT_HEIGHT) / 2f);
+                int labelWidth = width - (2 * EditorWidgets.TEXT_INSET)
+                    - (detail.isEmpty() ? 0 : detailWidth + DETAIL_GAP);
+                float textY = y + ((height - EditorWidgets.FONT_HEIGHT) / 2f);
 
                 GuiDraw.drawText(
                     EditorWidgets.fitToWidth(font, label, labelWidth),
-                    x + TEXT_INSET,
+                    x + EditorWidgets.TEXT_INSET,
                     textY,
                     1f,
-                    TEXT_COLOR,
+                    EditorWidgets.TEXT_COLOR,
                     true);
                 if (!detail.isEmpty()) {
-                    GuiDraw.drawText(detail, x + width - TEXT_INSET - detailWidth, textY, 1f, DETAIL_COLOR, true);
+                    GuiDraw.drawText(
+                        detail,
+                        x + width - EditorWidgets.TEXT_INSET - detailWidth,
+                        textY,
+                        1f,
+                        EditorWidgets.DETAIL_COLOR,
+                        true);
                 }
             })
             .setEnabledIf(button -> matchesSearch(searchText))

@@ -24,6 +24,7 @@ import com.cultivate.radialmenu.menu.action.SubmenuAction;
 import com.cultivate.radialmenu.menu.icon.ItemIcon;
 import com.cultivate.radialmenu.menu.icon.SectionIcon;
 import com.cultivate.radialmenu.menu.icon.TextIcon;
+import com.cultivate.radialmenu.util.ColorMath;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -39,8 +40,7 @@ import com.google.gson.JsonObject;
  */
 final class MenuJson {
 
-    static final int FORMAT_VERSION = 1;
-
+    private static final int FORMAT_VERSION = 1;
     private static final String KEY_VERSION = "version";
     private static final String KEY_LAST_MENU = "lastMenu";
     private static final String KEY_MENUS = "menus";
@@ -183,7 +183,7 @@ final class MenuJson {
         } else if (icon instanceof TextIcon textIcon) {
             json.addProperty(KEY_TYPE, ICON_TEXT);
             json.addProperty("text", textIcon.getText());
-            json.addProperty("color", String.format("%06X", textIcon.getColor()));
+            json.addProperty("color", ColorMath.formatRgb(textIcon.getColor()));
         }
         return json;
     }
@@ -204,7 +204,9 @@ final class MenuJson {
                     : null);
         }
         if (ICON_TEXT.equals(type)) {
-            return new TextIcon(getString(json, "text", ""), parseRgb(getString(json, "color", "FFFFFF")));
+            return new TextIcon(
+                getString(json, "text", ""),
+                ColorMath.parseRgb(getString(json, "color", ""), TextIcon.DEFAULT_COLOR));
         }
         RadialMenuMod.LOG.warn("ignoring unknown icon type {}", type);
         return null;
@@ -257,14 +259,6 @@ final class MenuJson {
     private static String getString(JsonObject json, String key, String fallback) {
         return json.has(key) ? json.get(key)
             .getAsString() : fallback;
-    }
-
-    private static int parseRgb(String hex) {
-        try {
-            return Integer.parseInt(hex, 16) & 0xFFFFFF;
-        } catch (NumberFormatException e) {
-            return TextIcon.DEFAULT_COLOR;
-        }
     }
 
     private static String encodeNbt(NBTTagCompound nbt) {

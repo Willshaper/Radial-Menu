@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import com.cultivate.radialmenu.client.RadialMenuClient;
 import com.cultivate.radialmenu.config.RadialMenuConfig;
 import com.gtnewhorizon.gtnhlib.config.ConfigException;
+import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -27,7 +28,7 @@ public class RadialMenuMod {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         try {
-            RadialMenuConfig.load();
+            ConfigurationManager.registerConfig(RadialMenuConfig.class);
         } catch (ConfigException e) {
             LOG.error("failed to register the config, using defaults", e);
         }

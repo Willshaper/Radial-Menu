@@ -14,6 +14,8 @@ public class TextIcon implements SectionIcon {
 
     // Glyph height of the vanilla font, used to scale text to the icon size.
     private static final float FONT_HEIGHT = 8f;
+    // Share of the icon's height the letters may fill.
+    private static final float HEIGHT_FILL = 0.75f;
     private static final float MIN_SCALE = 0.5f;
     private static final float MAX_SCALE = 2f;
 
@@ -47,7 +49,7 @@ public class TextIcon implements SectionIcon {
     public static void drawCenteredText(String text, int color, float centerX, float centerY, float size) {
         FontRenderer font = Minecraft.getMinecraft().fontRenderer;
         int width = Math.max(1, font.getStringWidth(text));
-        float scale = Math.min(size / width, (size * 0.75f) / FONT_HEIGHT);
+        float scale = Math.min(size / width, (size * HEIGHT_FILL) / FONT_HEIGHT);
 
         scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
         GL11.glPushMatrix();

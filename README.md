@@ -2,17 +2,17 @@
 
 A configurable radial menu for Minecraft 1.7.10 / GT New Horizons. Client-side only; works on any server.
 
-Requires GTNHLib and ModularUI2 (both ship with GTNH). Angelica-safe: the ring is drawn with the Tessellator and plain
-GL state calls.
+Requires GTNHLib and ModularUI2 (both ship with GTNH). The ring is drawn with the Tessellator and plain GL state calls,
+so it works with Angelica.
 
 ## Using it
 
-- **Hold R** to open the menu. Point at a section and **left click** to run it. Letting go of R closes the menu.
-- **Scroll** or press **Tab** (Shift+Tab to go back) to switch between menus.
-- Sections can open **submenus**. Right click, or click the center, to go back.
-- **Shift + click** a section to edit it. While Shift is held the hovered section gets a yellow edge and the text
-  under the ring says the click will edit. Clicking an empty section also edits it.
-- **Shift + click** the center, or use the (unbound by default) *Open Menu Manager* key, to manage menus.
+- Hold R to open the menu. Point at a section and left click to run it. Letting go of R closes the menu.
+- Scroll or press Tab (Shift+Tab to go back) to switch between menus.
+- Sections can open submenus. Right click, or click the center, to go back.
+- Shift + click a section to edit it. While Shift is held the hovered section gets a yellow edge and the text under
+  the ring says the click will edit. Clicking an empty section also edits it.
+- Shift + click the center, or use the *Open Menu Manager* key (unbound by default), to manage menus.
 
 All three keys are under *Radial Menu* in Controls.
 
@@ -30,7 +30,10 @@ Each section has a name, an icon and an action.
     press the real key (useful for sneak). Mods that read the keyboard directly instead of through a keybinding
     can't be triggered this way.
   - *Select Hotbar Slot*: switches to slot 1 to 9.
-  - *Open Submenu*: shows another menu inside the ring.
+  - *Open Submenu*: shows another menu inside the ring. *New* creates a submenu named after the section when you
+    save.
+
+*Clear* empties the section. It asks for a second click first.
 
 ## Menus
 
@@ -46,8 +49,8 @@ Menus are stored in `config/radialmenu/menus.json`. A file that can't be read is
 
 ## Settings
 
-The ring's colors are easiest to change in the menu manager: click a swatch next to *Colors* to open a color picker,
-or click *Reset* to go back to the default colors.
+Click a swatch next to *Colors* in the menu manager to pick the ring's colors, or click *Reset* to go back to the
+defaults.
 
 Ring size, center size, colors, the open animation, labels and whether the last used menu is remembered are also in
 the mod's config screen (Mods → Radial Menu → Config) or `config/radialmenu.cfg`. Colors there are written like

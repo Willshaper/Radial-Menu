@@ -1,27 +1,21 @@
 package com.cultivate.radialmenu.config;
 
-import net.minecraftforge.common.config.ConfigCategory;
-import net.minecraftforge.common.config.Configuration;
-
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.gtnewhorizon.gtnhlib.config.Config;
-import com.gtnewhorizon.gtnhlib.config.ConfigException;
-import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 /**
  * Appearance and behaviour settings. The menus themselves live in {@code config/radialmenu/menus.json} and are
  * edited in-game.
  *
  * <p>
- * Colors are stored as {@code #RRGGBB} plus a separate opacity so they are easy to read and type. They can also be
- * picked with a color picker in the menu manager, which writes them back here.
+ * Colors are stored as {@code #RRGGBB} plus a separate opacity so they are easy to read and type. The menu manager's
+ * color picker writes them back here.
+ *
+ * <p>
+ * GTNHLib turns every field declared in this class into an option, constants included, so keep helpers elsewhere.
  */
-@Config(modid = RadialMenuMod.MODID, category = RadialMenuConfig.CATEGORY)
+@Config(modid = RadialMenuMod.MODID, category = "general")
 public class RadialMenuConfig {
-
-    // GTNHLib turns every field declared here into an option, so helper constants and color math live in ColorMath.
-    @Config.Ignore
-    static final String CATEGORY = "general";
 
     @Config.Comment("Distance in GUI pixels from the center of the screen to the middle of the ring.")
     @Config.RangeInt(min = 32, max = 160)
@@ -88,49 +82,4 @@ public class RadialMenuConfig {
     @Config.DefaultInt(75)
     @Config.Name("Center Opacity")
     public static int centerOpacity = 75;
-
-    /**
-     * Reads the config file into the fields, then saves it back if any color had to be cleaned up.
-     */
-    public static void load() throws ConfigException {
-        ConfigurationManager.registerConfig(RadialMenuConfig.class);
-        removeLeakedEntries();
-        if (normalizeColors()) {
-            ConfigurationManager.save(RadialMenuConfig.class);
-        }
-    }
-
-    /**
-     * Deletes entries that older versions wrote by mistake: they kept private constants in this class, and GTNHLib
-     * saved
-     * those as options.
-     */
-    private static void removeLeakedEntries() {
-        String[] leakedNames = { "HEX_COLOR_PATTERN", "MAX_PERCENT", "MAX_CHANNEL" };
-        Configuration config = ConfigurationManager.getConfig(RadialMenuConfig.class);
-        ConfigCategory category = config.getCategory(CATEGORY);
-        boolean removed = false;
-
-        for (String name : leakedNames) {
-            removed |= category.remove(name) != null;
-        }
-        if (removed) {
-            config.save();
-        }
-    }
-
-    /**
-     * Rewrites every color in the standard {@code #RRGGBB} form, so hand-typed or old values show cleanly in the config
-     * screen.
-     *
-     * @return true if anything changed and the config should be saved
-     */
-    private static boolean normalizeColors() {
-        boolean changed = false;
-
-        for (RingColor color : RingColor.values()) {
-            changed |= color.normalize();
-        }
-        return changed;
-    }
 }

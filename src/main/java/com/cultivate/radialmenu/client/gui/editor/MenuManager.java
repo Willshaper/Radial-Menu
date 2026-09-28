@@ -55,10 +55,6 @@ public final class MenuManager {
     private static final int MOVE_BUTTON_WIDTH = 12;
     private static final int ICON_SIZE = 16;
     private static final int NUMBER_WIDTH = 18;
-    private static final int TEXT_INSET = 4;
-    private static final int FONT_HEIGHT = 8;
-    private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int DETAIL_COLOR = 0xFFA0A0A0;
     private static final int SELECTED_FILL = 0x503C78D8;
     private static final int SELECTED_ACCENT = 0xFF3C78D8;
     private static final int ACCENT_WIDTH = 2;
@@ -183,20 +179,26 @@ public final class MenuManager {
                 String name = (menu.isInCycle() ? "" : SUBMENU_MARK) + menu.getName();
                 String count = String.valueOf(menu.getSectionCount());
                 int countWidth = font.getStringWidth(count);
-                float textY = y + ((height - FONT_HEIGHT) / 2f);
+                float textY = y + ((height - EditorWidgets.FONT_HEIGHT) / 2f);
 
                 if (menu == selected) {
                     GuiDraw.drawRect(x, y, width, height, SELECTED_FILL);
                     GuiDraw.drawRect(x, y, ACCENT_WIDTH, height, SELECTED_ACCENT);
                 }
                 GuiDraw.drawText(
-                    EditorWidgets.fitToWidth(font, name, width - (3 * TEXT_INSET) - countWidth),
-                    x + TEXT_INSET + ACCENT_WIDTH,
+                    EditorWidgets.fitToWidth(font, name, width - (3 * EditorWidgets.TEXT_INSET) - countWidth),
+                    x + EditorWidgets.TEXT_INSET + ACCENT_WIDTH,
                     textY,
                     1f,
-                    TEXT_COLOR,
+                    EditorWidgets.TEXT_COLOR,
                     true);
-                GuiDraw.drawText(count, x + width - TEXT_INSET - countWidth, textY, 1f, DETAIL_COLOR, true);
+                GuiDraw.drawText(
+                    count,
+                    x + width - EditorWidgets.TEXT_INSET - countWidth,
+                    textY,
+                    1f,
+                    EditorWidgets.DETAIL_COLOR,
+                    true);
             })
             .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.manager.menu_tooltip")))
             .onMousePressed(mouseButton -> {
@@ -376,20 +378,22 @@ public final class MenuManager {
             MenuSection section = selected.getSection(index);
             SectionIcon icon = section.getIcon();
             FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-            float textY = y + ((height - FONT_HEIGHT) / 2f);
+            float textY = y + ((height - EditorWidgets.FONT_HEIGHT) / 2f);
             float iconX = x + NUMBER_WIDTH;
-            int textX = Math.round(iconX + ICON_SIZE + TEXT_INSET);
+            int textX = Math.round(iconX + ICON_SIZE + EditorWidgets.TEXT_INSET);
 
-            GuiDraw.drawText((index + 1) + ".", x + 3, textY, 1f, TEXT_COLOR, true);
+            GuiDraw
+                .drawText((index + 1) + ".", x + EditorWidgets.TEXT_INSET, textY, 1f, EditorWidgets.TEXT_COLOR, true);
             if (icon != null) {
                 icon.draw(iconX + (ICON_SIZE / 2f), y + (height / 2f), ICON_SIZE);
             }
             GuiDraw.drawText(
-                EditorWidgets.fitToWidth(font, describeSection(section), (x + width) - textX - TEXT_INSET),
+                EditorWidgets
+                    .fitToWidth(font, describeSection(section), (x + width) - textX - EditorWidgets.TEXT_INSET),
                 textX,
                 textY,
                 1f,
-                section.isEmpty() ? DETAIL_COLOR : TEXT_COLOR,
+                section.isEmpty() ? EditorWidgets.DETAIL_COLOR : EditorWidgets.TEXT_COLOR,
                 true);
         };
     }

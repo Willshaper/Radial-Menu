@@ -137,7 +137,7 @@ public class RadialScreen extends CustomModularScreen {
     }
 
     /**
-     * @return how far the open animation has come, from 0 to 1
+     * @return the ring's size relative to its full size: grows from 0.5 to 1 while the open animation plays
      */
     float getOpenScale() {
         float progress;
@@ -154,8 +154,11 @@ public class RadialScreen extends CustomModularScreen {
         return new RadialLayout(getScreenArea().w(), getScreenArea().h(), menu.getSectionCount(), scale);
     }
 
+    /**
+     * @return the section under the mouse, measured on the ring as it is drawn right now
+     */
     int getHoveredSection() {
-        return createLayout(1f).sectionAt(getContext().getAbsMouseX(), getContext().getAbsMouseY());
+        return createLayout(getOpenScale()).sectionAt(getContext().getAbsMouseX(), getContext().getAbsMouseY());
     }
 
     @Override
@@ -225,6 +228,7 @@ public class RadialScreen extends CustomModularScreen {
 
     @Override
     public boolean onKeyPressed(char typedChar, int keyCode) {
+        // Unbound keybindings have key code 0, as do typed characters without a key; neither should match.
         if (keyCode == 0) {
             return super.onKeyPressed(typedChar, keyCode);
         }

@@ -24,6 +24,7 @@ final class ItemDropSlot extends Widget<ItemDropSlot>
 
     private static final int SIZE = 18;
     private static final int ITEM_SIZE = 16;
+    private static final int ITEM_OFFSET = (SIZE - ITEM_SIZE) / 2;
     private static final int RIGHT_BUTTON = 1;
 
     private final Supplier<ItemStack> getter;
@@ -66,7 +67,7 @@ final class ItemDropSlot extends Widget<ItemDropSlot>
         ItemStack stack = getter.get();
 
         if (stack != null) {
-            GuiDraw.drawItem(stack, 1, 1, ITEM_SIZE, ITEM_SIZE, 0);
+            GuiDraw.drawItem(stack, ITEM_OFFSET, ITEM_OFFSET, ITEM_SIZE, ITEM_SIZE, 0);
         }
     }
 }

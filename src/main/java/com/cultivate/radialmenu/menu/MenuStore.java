@@ -10,6 +10,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 
@@ -165,7 +166,7 @@ public class MenuStore {
     }
 
     private String createUniqueId(String name) {
-        String base = name.toLowerCase()
+        String base = name.toLowerCase(Locale.ROOT)
             .replaceAll("[^a-z0-9]+", "_")
             .replaceAll("^_+|_+$", "");
         String id;

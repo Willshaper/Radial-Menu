@@ -13,12 +13,14 @@ final class RadialLayout {
     /** Returned by {@link #sectionAt} when the pointer is over the center circle. */
     static final int CENTER = -1;
 
-    private static final double FULL_CIRCLE = 2 * Math.PI;
+    static final double FULL_CIRCLE = 2 * Math.PI;
     // Arc length each section needs at the middle of the ring, so icons don't crowd together.
     private static final float MIN_SECTION_ARC = 22f;
     // Room left between the ring and the screen edge for the labels above and below it.
     private static final float LABEL_MARGIN = 16f;
     private static final float MAX_ICON_SIZE = 16f;
+    // Share of a section's width and of the ring's thickness an icon may fill.
+    private static final float ICON_FILL = 0.7f;
     private static final float CENTER_GAP = 4f;
 
     final float centerX;
@@ -49,7 +51,7 @@ final class RadialLayout {
         this.centerRadius = Math
             .max(0, Math.min(RadialMenuConfig.centerRadius * fit * scale, innerRadius - CENTER_GAP));
         sectionArc = (float) (sectionAngle * middleRadius);
-        this.iconSize = Math.min(MAX_ICON_SIZE, Math.min(sectionArc * 0.7f, thickness * 0.7f));
+        this.iconSize = Math.min(MAX_ICON_SIZE, Math.min(sectionArc * ICON_FILL, thickness * ICON_FILL));
     }
 
     float middleRadius() {

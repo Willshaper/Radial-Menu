@@ -54,8 +54,8 @@ public final class KeyPresser {
     }
 
     /**
-     * Releases bindings tapped on an earlier tick. Called once per client tick. A press nobody consumed is dropped so
-     * it can't fire later out of nowhere.
+     * Releases bindings tapped on an earlier tick. Called once per client tick. A press no mod consumed is dropped, so
+     * it can't trigger on some later tick.
      */
     static void releaseTappedKeys() {
         for (KeyBinding binding : PENDING_RELEASE) {

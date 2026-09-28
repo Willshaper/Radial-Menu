@@ -21,6 +21,12 @@ final class EditorWidgets {
     static final int ROW_HEIGHT = 16;
     static final int LABEL_WIDTH = 58;
     static final int HINT_COLOR = 0xFF707070;
+    // Height of a line of text in the vanilla font, without the gap below it.
+    static final int FONT_HEIGHT = 8;
+    static final int TEXT_COLOR = 0xFFFFFFFF;
+    // Space between a list row's edge and its text.
+    static final int TEXT_INSET = 4;
+    static final int DETAIL_COLOR = 0xFFA0A0A0;
     // List scrollbars get a fixed width, and list rows leave this much room so the scrollbar never covers them.
     static final int SCROLLBAR_THICKNESS = 4;
     static final int LIST_ROW_INSET = SCROLLBAR_THICKNESS + 4;

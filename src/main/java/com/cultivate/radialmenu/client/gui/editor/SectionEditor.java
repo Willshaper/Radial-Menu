@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 import javax.annotation.Nullable;
 
@@ -90,6 +91,8 @@ public final class SectionEditor {
     private int hotbarSlot = HotbarAction.FIRST_SLOT;
     @Nullable
     private String submenuId;
+    // Set by the New button: a submenu named after this section is created when the section is saved.
+    private boolean createSubmenuOnSave;
 
     private SectionEditor(RadialMenu menu, int index, boolean returnToManager) {
         MenuSection section = menu.getSection(index);
@@ -201,7 +204,7 @@ public final class SectionEditor {
                     EditorWidgets.cycleButton(
                         () -> I18n.format(
                             "radialmenu.editor.icon." + iconKind.name()
-                                .toLowerCase()),
+                                .toLowerCase(Locale.ROOT)),
                         offset -> iconKind = EditorWidgets.cycle(iconKind, offset))
                         .expanded()))
             .child(
@@ -371,6 +374,9 @@ public final class SectionEditor {
     private String getSubmenuButtonText() {
         RadialMenu submenu = submenuId == null ? null : store.getMenu(submenuId);
 
+        if (createSubmenuOnSave) {
+            return I18n.format("radialmenu.editor.new_submenu_pending", getNewSubmenuName());
+        }
         if (submenuId == null) {
             return I18n.format("radialmenu.editor.choose");
         }
@@ -384,28 +390,32 @@ public final class SectionEditor {
         List<RadialMenu> menus = new ArrayList<>(store.getMenus());
 
         menus.remove(menu);
-        IPanelHandler
-            .simple(
-                panel,
-                (parentPanel, player) -> new SearchListDialog<>(
-                    "submenu_picker",
-                    I18n.format("radialmenu.editor.pick_submenu"),
-                    menus,
-                    null,
-                    RadialMenu::getName,
-                    null,
-                    picked -> submenuId = picked.getId()),
-                true)
+        IPanelHandler.simple(
+            panel,
+            (parentPanel, player) -> new SearchListDialog<>(
+                "submenu_picker",
+                I18n.format("radialmenu.editor.pick_submenu"),
+                menus,
+                null,
+                RadialMenu::getName,
+                null,
+                picked -> {
+                    submenuId = picked.getId();
+                    createSubmenuOnSave = false;
+                }),
+            true)
             .openPanel();
     }
 
     private void createSubmenu() {
-        String name = label.trim()
-            .isEmpty() ? I18n.format("radialmenu.editor.default_submenu_name") : label.trim();
+        createSubmenuOnSave = true;
+        submenuId = null;
+    }
 
-        submenuId = store.createMenu(name, false)
-            .getId();
-        store.save();
+    private String getNewSubmenuName() {
+        String trimmed = label.trim();
+
+        return trimmed.isEmpty() ? I18n.format("radialmenu.editor.default_submenu_name") : trimmed;
     }
 
     private Flow buildButtonRow() {
@@ -433,6 +443,10 @@ public final class SectionEditor {
     }
 
     private void save() {
+        if ((actionType == ActionType.SUBMENU) && createSubmenuOnSave) {
+            submenuId = store.createMenu(getNewSubmenuName(), false)
+                .getId();
+        }
         menu.setSection(index, new MenuSection(label.trim(), createIcon(), createAction()));
         store.save();
         finish();
