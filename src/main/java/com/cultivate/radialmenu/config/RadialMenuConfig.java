@@ -1,6 +1,7 @@
 package com.cultivate.radialmenu.config;
 
-import java.util.Locale;
+import net.minecraftforge.common.config.ConfigCategory;
+import net.minecraftforge.common.config.Configuration;
 
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.gtnewhorizon.gtnhlib.config.Config;
@@ -15,11 +16,12 @@ import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
  * Colors are stored as {@code #RRGGBB} plus a separate opacity so they are easy to read and type. They can also be
  * picked with a color picker in the menu manager, which writes them back here.
  */
-@Config(modid = RadialMenuMod.MODID, category = "general")
+@Config(modid = RadialMenuMod.MODID, category = RadialMenuConfig.CATEGORY)
 public class RadialMenuConfig {
 
-    private static final int MAX_PERCENT = 100;
-    private static final int MAX_CHANNEL = 255;
+    // GTNHLib turns every field declared here into an option, so helper constants and color math live in ColorMath.
+    @Config.Ignore
+    static final String CATEGORY = "general";
 
     @Config.Comment("Distance in GUI pixels from the center of the screen to the middle of the ring.")
     @Config.RangeInt(min = 32, max = 160)
@@ -92,8 +94,28 @@ public class RadialMenuConfig {
      */
     public static void load() throws ConfigException {
         ConfigurationManager.registerConfig(RadialMenuConfig.class);
+        removeLeakedEntries();
         if (normalizeColors()) {
             ConfigurationManager.save(RadialMenuConfig.class);
+        }
+    }
+
+    /**
+     * Deletes entries that older versions wrote by mistake: they kept private constants in this class, and GTNHLib
+     * saved
+     * those as options.
+     */
+    private static void removeLeakedEntries() {
+        String[] leakedNames = { "HEX_COLOR_PATTERN", "MAX_PERCENT", "MAX_CHANNEL" };
+        Configuration config = ConfigurationManager.getConfig(RadialMenuConfig.class);
+        ConfigCategory category = config.getCategory(CATEGORY);
+        boolean removed = false;
+
+        for (String name : leakedNames) {
+            removed |= category.remove(name) != null;
+        }
+        if (removed) {
+            config.save();
         }
     }
 
@@ -110,50 +132,5 @@ public class RadialMenuConfig {
             changed |= color.normalize();
         }
         return changed;
-    }
-
-    /**
-     * Reads a color typed as {@code #RRGGBB}, {@code RRGGBB} or the short {@code #RGB}. Eight digits (the old
-     * {@code AARRGGBB} form) keep only the color part. Anything else gives {@code fallback}.
-     */
-    static int parseRgb(String text, int fallback) {
-        String hex = text == null ? "" : text.trim();
-
-        if (hex.startsWith("#")) {
-            hex = hex.substring(1);
-        }
-        if (hex.length() == 3) {
-            hex = new String(
-                new char[] { hex.charAt(0), hex.charAt(0), hex.charAt(1), hex.charAt(1), hex.charAt(2),
-                    hex.charAt(2) });
-        } else if (hex.length() == 8) {
-            hex = hex.substring(2);
-        }
-        if (hex.length() != 6) {
-            return fallback;
-        }
-        try {
-            return Integer.parseInt(hex, 16);
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
-    }
-
-    static String formatRgb(int rgb) {
-        return String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
-    }
-
-    /**
-     * @return a color and an opacity in percent combined into one ARGB value
-     */
-    static int toArgb(int rgb, int opacityPercent) {
-        int percent = Math.max(0, Math.min(MAX_PERCENT, opacityPercent));
-        int alpha = Math.round((percent * MAX_CHANNEL) / (float) MAX_PERCENT);
-
-        return (alpha << 24) | (rgb & 0xFFFFFF);
-    }
-
-    static int toOpacityPercent(int argb) {
-        return Math.round(((argb >>> 24) * MAX_PERCENT) / (float) MAX_CHANNEL);
     }
 }

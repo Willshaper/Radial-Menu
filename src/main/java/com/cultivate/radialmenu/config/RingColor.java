@@ -26,22 +26,22 @@ public enum RingColor {
     }
 
     public int getArgb() {
-        return RadialMenuConfig.toArgb(RadialMenuConfig.parseRgb(getText(), defaultRgb), getOpacity());
+        return ColorMath.toArgb(ColorMath.parseRgb(getText(), defaultRgb), getOpacity());
     }
 
     /**
      * Stores a color picked in the game. The caller saves the config.
      */
     public void setArgb(int argb) {
-        setText(RadialMenuConfig.formatRgb(argb));
-        setOpacity(RadialMenuConfig.toOpacityPercent(argb));
+        setText(ColorMath.formatRgb(argb));
+        setOpacity(ColorMath.toOpacityPercent(argb));
     }
 
     /**
      * Puts the color and opacity back to their defaults. The caller saves the config.
      */
     public void reset() {
-        setText(RadialMenuConfig.formatRgb(defaultRgb));
+        setText(ColorMath.formatRgb(defaultRgb));
         setOpacity(defaultOpacity);
     }
 
@@ -52,7 +52,7 @@ public enum RingColor {
      */
     boolean normalize() {
         String before = getText();
-        String after = RadialMenuConfig.formatRgb(RadialMenuConfig.parseRgb(before, defaultRgb));
+        String after = ColorMath.formatRgb(ColorMath.parseRgb(before, defaultRgb));
 
         setText(after);
         return !after.equals(before);
