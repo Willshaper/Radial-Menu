@@ -5,6 +5,11 @@ A configurable radial menu for Minecraft 1.7.10 / GT New Horizons. Client-side o
 Requires GTNHLib and ModularUI2 (both ship with GTNH). The ring is drawn with the Tessellator and plain GL state calls,
 so it works with Angelica.
 
+## Download
+
+Get the jar from the [Releases](../../releases) page and put it in your `mods` folder. Use the plain
+`radialmenu-<version>.jar`; the `-dev` and `-sources` jars are for developers.
+
 ## Using it
 
 - Hold R to open the menu. Point at a section and left click to run it. Letting go of R closes the menu.
@@ -58,10 +63,12 @@ the mod's config screen (Mods → Radial Menu → Config) or `config/radialmenu.
 
 ## Building
 
-Gradle needs JDK 25 to run (the mod itself targets Java 8):
+Run `./gradlew build` with JDK 17 or newer. Gradle runs the build itself on JDK 25, using an installed copy or
+downloading one; the mod still targets Java 8. The jar ends up in `build/libs`, and its version comes from the git tag.
 
-```
-JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-25..." ./gradlew build
-```
+GitHub Actions builds every push. Pushing a version tag, such as `1.4.0`, builds that version and publishes it on the
+Releases page with the jars attached.
 
-The version comes from the git tag.
+## License
+
+LGPL-3.0. See [LICENSE](LICENSE).

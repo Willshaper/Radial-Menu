@@ -40,3 +40,6 @@ layout.json
 # Local build logs
 build-log*.txt
 
+
+# Built jars kept locally; downloads come from GitHub Releases
+releases/
