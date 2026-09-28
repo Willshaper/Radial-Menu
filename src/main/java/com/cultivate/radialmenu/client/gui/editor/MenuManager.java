@@ -52,8 +52,6 @@ public final class MenuManager {
     // Given as a fixed width: MUI2 does not size rows inside a column that only has a relative width.
     private static final int SELECTED_COLUMN_WIDTH = PANEL_WIDTH - (2 * PADDING) - MENU_LIST_WIDTH - PADDING;
     private static final int LIST_ROW_HEIGHT = 18;
-    // Kept free at the right of list rows so the scrollbar does not cover them.
-    private static final int SCROLLBAR_ROOM = 4;
     private static final int MOVE_BUTTON_WIDTH = 12;
     private static final int ICON_SIZE = 16;
     private static final int NUMBER_WIDTH = 18;
@@ -130,7 +128,9 @@ public final class MenuManager {
                     .widthRel(1f)
                     .height(12))
             .child(
-                new ListWidget<>().widthRel(1f)
+                new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
+                    .showScrollShadows(false)
+                    .widthRel(1f)
                     .expanded()
                     .children(menus, this::createMenuButton))
             .child(
@@ -176,7 +176,7 @@ public final class MenuManager {
      * gets a tinted fill and an accent bar. Menus only reachable as submenus are marked with an arrow.
      */
     private ButtonWidget<?> createMenuButton(RadialMenu menu) {
-        return new ButtonWidget<>().widthRelOffset(1f, -SCROLLBAR_ROOM)
+        return new ButtonWidget<>().widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
             .height(LIST_ROW_HEIGHT)
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 FontRenderer font = Minecraft.getMinecraft().fontRenderer;
@@ -266,7 +266,9 @@ public final class MenuManager {
                     EditorWidgets.button("radialmenu.manager.reset_colors", MenuManager::resetColors)
                         .width(RESET_WIDTH)))
             .child(
-                new ListWidget<>().widthRel(1f)
+                new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
+                    .showScrollShadows(false)
+                    .widthRel(1f)
                     .expanded()
                     .collapseDisabledChild()
                     .children(RadialMenu.MAX_SECTIONS, this::createSectionRow));
@@ -326,12 +328,13 @@ public final class MenuManager {
      */
     private Flow createSectionRow(int index) {
         return Flow.row()
-            .widthRelOffset(1f, -SCROLLBAR_ROOM)
+            .widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
             .height(LIST_ROW_HEIGHT)
             .childPadding(1)
             .setEnabledIf(row -> index < selected.getSectionCount())
             .child(
-                new ButtonWidget<>().width(SELECTED_COLUMN_WIDTH - SCROLLBAR_ROOM - (2 * (MOVE_BUTTON_WIDTH + 1)))
+                new ButtonWidget<>()
+                    .width(SELECTED_COLUMN_WIDTH - EditorWidgets.LIST_ROW_INSET - (2 * (MOVE_BUTTON_WIDTH + 1)))
                     .heightRel(1f)
                     .overlay(sectionRowDrawable(index))
                     .onMousePressed(mouseButton -> {

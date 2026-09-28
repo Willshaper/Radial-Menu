@@ -94,7 +94,9 @@ final class SearchListDialog<T> extends Dialog<T> {
                         .widthRel(1f)
                         .height(14))
                 .child(
-                    new ListWidget<>().widthRel(1f)
+                    new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
+                        .showScrollShadows(false)
+                        .widthRel(1f)
                         .expanded()
                         .collapseDisabledChild()
                         .children(rows)));
@@ -115,7 +117,7 @@ final class SearchListDialog<T> extends Dialog<T> {
             .color(HEADER_COLOR)
             .alignment(Alignment.BottomLeft)
             .asWidget()
-            .widthRel(1f)
+            .widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
             .height(HEADER_HEIGHT)
             .setEnabledIf(
                 header -> optionSearchTexts.stream()
@@ -123,7 +125,7 @@ final class SearchListDialog<T> extends Dialog<T> {
     }
 
     private ButtonWidget<?> createOptionButton(T option, String label, String detail, String searchText) {
-        return new ButtonWidget<>().widthRel(1f)
+        return new ButtonWidget<>().widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
             .height(ROW_HEIGHT)
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 FontRenderer font = Minecraft.getMinecraft().fontRenderer;

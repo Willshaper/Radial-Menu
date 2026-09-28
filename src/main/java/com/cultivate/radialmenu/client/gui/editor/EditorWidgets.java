@@ -5,9 +5,11 @@ import java.util.function.Supplier;
 
 import net.minecraft.client.gui.FontRenderer;
 
+import com.cleanroommc.modularui.api.GuiAxis;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.utils.Alignment;
+import com.cleanroommc.modularui.widget.scroll.ScrollData;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 
@@ -19,6 +21,9 @@ final class EditorWidgets {
     static final int ROW_HEIGHT = 16;
     static final int LABEL_WIDTH = 58;
     static final int HINT_COLOR = 0xFF707070;
+    // List scrollbars get a fixed width, and list rows leave this much room so the scrollbar never covers them.
+    static final int SCROLLBAR_THICKNESS = 4;
+    static final int LIST_ROW_INSET = SCROLLBAR_THICKNESS + 2;
 
     private static final int RIGHT_BUTTON = 1;
     private static final String ELLIPSIS = "...";
@@ -66,6 +71,13 @@ final class EditorWidgets {
                 onClick.run();
                 return true;
             });
+    }
+
+    /**
+     * @return a vertical scrollbar on the right with a fixed width, so list rows can be sized to stay clear of it
+     */
+    static ScrollData verticalScrollbar() {
+        return ScrollData.of(GuiAxis.Y, false, SCROLLBAR_THICKNESS);
     }
 
     /**
