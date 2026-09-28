@@ -19,6 +19,7 @@ import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.cultivate.radialmenu.RadialMenuMod;
+import com.cultivate.radialmenu.client.ClientTickHandler;
 import com.cultivate.radialmenu.client.RadialMenuClient;
 import com.cultivate.radialmenu.menu.MenuSection;
 import com.cultivate.radialmenu.menu.MenuStore;
@@ -60,20 +61,22 @@ public final class MenuManager {
      * @param selected the menu to show first, or null for the first menu
      */
     public static void open(@Nullable RadialMenu selected) {
-        MenuStore store = RadialMenuClient.getMenuStore();
-        RadialMenu shown = (selected != null) && store.getMenus()
-            .contains(selected) ? selected
-                : store.getMenus()
-                    .get(0);
-        MenuManager manager = new MenuManager(shown);
+        ClientTickHandler.openScreenNextTick(() -> {
+            MenuStore store = RadialMenuClient.getMenuStore();
+            RadialMenu shown = (selected != null) && store.getMenus()
+                .contains(selected) ? selected
+                    : store.getMenus()
+                        .get(0);
+            MenuManager manager = new MenuManager(shown);
 
-        ClientGUI.open(new ModularScreen(RadialMenuMod.MODID, manager.buildPanel()) {
+            ClientGUI.open(new ModularScreen(RadialMenuMod.MODID, manager.buildPanel()) {
 
-            @Override
-            public void onClose() {
-                super.onClose();
-                manager.store.save();
-            }
+                @Override
+                public void onClose() {
+                    super.onClose();
+                    manager.store.save();
+                }
+            });
         });
     }
 
@@ -170,7 +173,7 @@ public final class MenuManager {
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.editor.name",
-                    new TextFieldWidget()
+                    new TextFieldWidget().autoUpdateOnChange(true)
                         .value(new StringValue.Dynamic(selected::getName, value -> selected.setName(value)))
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT)))

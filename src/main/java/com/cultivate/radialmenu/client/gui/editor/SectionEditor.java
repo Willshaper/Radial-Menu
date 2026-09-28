@@ -30,6 +30,7 @@ import com.cleanroommc.modularui.widgets.ColorPickerDialog;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.cultivate.radialmenu.RadialMenuMod;
+import com.cultivate.radialmenu.client.ClientTickHandler;
 import com.cultivate.radialmenu.client.RadialMenuClient;
 import com.cultivate.radialmenu.menu.MenuSection;
 import com.cultivate.radialmenu.menu.MenuStore;
@@ -107,15 +108,17 @@ public final class SectionEditor {
      * @param returnToManager reopen the menu manager when done, for sections edited from there
      */
     public static void open(RadialMenu menu, int index, boolean returnToManager) {
-        SectionEditor editor = new SectionEditor(menu, index, returnToManager);
-        RecipeViewerSettingsImpl recipeViewer = new RecipeViewerSettingsImpl();
-        UISettings settings;
+        ClientTickHandler.openScreenNextTick(() -> {
+            SectionEditor editor = new SectionEditor(menu, index, returnToManager);
+            RecipeViewerSettingsImpl recipeViewer = new RecipeViewerSettingsImpl();
+            UISettings settings;
 
-        // Client-only screens hide the recipe viewer by default, and NEI only draws on container screens.
-        recipeViewer.enable();
-        settings = new UISettings(recipeViewer);
-        settings.customContainer(ModularContainer::new);
-        ClientGUI.open(new ModularScreen(RadialMenuMod.MODID, editor.buildPanel()), settings);
+            // Client-only screens hide the recipe viewer by default, and NEI only draws on container screens.
+            recipeViewer.enable();
+            settings = new UISettings(recipeViewer);
+            settings.customContainer(ModularContainer::new);
+            ClientGUI.open(new ModularScreen(RadialMenuMod.MODID, editor.buildPanel()), settings);
+        });
     }
 
     private void loadIcon(@Nullable SectionIcon icon) {
@@ -165,7 +168,8 @@ public final class SectionEditor {
                 .child(
                     EditorWidgets.labeledRow(
                         "radialmenu.editor.name",
-                        new TextFieldWidget().value(new StringValue.Dynamic(() -> label, value -> label = value))
+                        new TextFieldWidget().autoUpdateOnChange(true)
+                            .value(new StringValue.Dynamic(() -> label, value -> label = value))
                             .expanded()
                             .height(EditorWidgets.ROW_HEIGHT)))
                 .child(buildIconRows())
@@ -215,7 +219,8 @@ public final class SectionEditor {
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.editor.text",
-                    new TextFieldWidget().value(new StringValue.Dynamic(() -> iconText, value -> iconText = value))
+                    new TextFieldWidget().autoUpdateOnChange(true)
+                        .value(new StringValue.Dynamic(() -> iconText, value -> iconText = value))
                         .setMaxLength(TEXT_ICON_MAX_LENGTH)
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT),
@@ -269,7 +274,8 @@ public final class SectionEditor {
                 actionRow(
                     ActionType.COMMAND,
                     "radialmenu.editor.command",
-                    new TextFieldWidget().value(new StringValue.Dynamic(() -> command, value -> command = value))
+                    new TextFieldWidget().autoUpdateOnChange(true)
+                        .value(new StringValue.Dynamic(() -> command, value -> command = value))
                         .hintText("/home")
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT)))
@@ -277,7 +283,7 @@ public final class SectionEditor {
                 actionRow(
                     ActionType.CHAT,
                     "radialmenu.editor.message",
-                    new TextFieldWidget()
+                    new TextFieldWidget().autoUpdateOnChange(true)
                         .value(new StringValue.Dynamic(() -> chatMessage, value -> chatMessage = value))
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT)))

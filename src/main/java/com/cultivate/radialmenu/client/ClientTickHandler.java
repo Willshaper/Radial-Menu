@@ -23,6 +23,8 @@ public class ClientTickHandler {
     @Nullable
     private static SectionAction pendingAction;
     private static int pendingActionAge;
+    @Nullable
+    private static Runnable pendingScreenOpener;
 
     // Set when the menu opens, so it does not reopen until the key has been let go.
     private boolean waitingForKeyRelease;
@@ -36,6 +38,14 @@ public class ClientTickHandler {
         pendingActionAge = 0;
     }
 
+    /**
+     * Opens a screen at the start of the next tick. Opening a screen from inside another screen's click handler breaks
+     * the old screen's input handling, so screens opened from a GUI go through here.
+     */
+    public static void openScreenNextTick(Runnable opener) {
+        pendingScreenOpener = opener;
+    }
+
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
         Minecraft mc = Minecraft.getMinecraft();
@@ -45,6 +55,7 @@ public class ClientTickHandler {
             return;
         }
         KeyPresser.releaseTappedKeys();
+        runPendingScreenOpener();
         runPendingAction(mc);
         if (!openKeyDown) {
             waitingForKeyRelease = false;
@@ -57,6 +68,15 @@ public class ClientTickHandler {
             RadialScreen.open();
         } else if (KeyBindings.EDITOR.isPressed()) {
             MenuManager.open(null);
+        }
+    }
+
+    private static void runPendingScreenOpener() {
+        Runnable opener = pendingScreenOpener;
+
+        if (opener != null) {
+            pendingScreenOpener = null;
+            opener.run();
         }
     }
 

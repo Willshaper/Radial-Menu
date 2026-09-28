@@ -173,6 +173,7 @@ public class RadialScreen extends CustomModularScreen {
         if (hovered == RadialLayout.CENTER) {
             if (shift) {
                 MenuManager.open(menu);
+                close();
             } else {
                 goBack();
             }
@@ -188,6 +189,7 @@ public class RadialScreen extends CustomModularScreen {
 
         if (shift || (action == null)) {
             SectionEditor.open(menu, index);
+            close();
             return;
         }
         if (action instanceof SubmenuAction submenuAction) {
