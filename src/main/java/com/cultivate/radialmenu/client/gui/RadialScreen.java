@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
-import com.cleanroommc.modularui.api.UpOrDown;
+import net.minecraft.client.Minecraft;
+
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.widget.Interactable;
-import com.cleanroommc.modularui.factory.ClientGUI;
 import com.cleanroommc.modularui.screen.CustomModularScreen;
+import com.cleanroommc.modularui.screen.GuiScreenWrapper;
 import com.cleanroommc.modularui.screen.ModularPanel;
+import com.cleanroommc.modularui.screen.ModularScreen;
+import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.cultivate.radialmenu.client.ClientTickHandler;
@@ -53,7 +56,6 @@ public class RadialScreen extends CustomModularScreen {
     private RadialScreen(RadialMenu menu) {
         super(RadialMenuMod.MODID);
         this.menu = menu;
-        drawDarkBackground(false);
     }
 
     /**
@@ -72,14 +74,28 @@ public class RadialScreen extends CustomModularScreen {
                 start = lastMenu;
             }
         }
-        ClientGUI.open(new RadialScreen(start));
+        openWithoutDarkBackground(new RadialScreen(start));
+    }
+
+    /**
+     * Opens the screen the way {@code ClientGUI.open} does, but keeps the world visible behind it. ModularUI2 2.2.18
+     * always darkens the background and has no setting to turn that off.
+     */
+    private static void openWithoutDarkBackground(RadialScreen screen) {
+        screen.getContext()
+            .setSettings(new UISettings());
+        Minecraft.getMinecraft()
+            .displayGuiScreen(new GuiScreenWrapper(screen) {
+
+                @Override
+                public void drawWorldBackground(int tint) {}
+            });
     }
 
     @Override
     public ModularPanel buildUI(ModularGuiContext context) {
         return new ModularPanel(PANEL_NAME).full()
             .background(IDrawable.EMPTY)
-            .disableThemeBackground(true)
             .child(new RadialWidget(this).full());
     }
 
@@ -221,7 +237,7 @@ public class RadialScreen extends CustomModularScreen {
     }
 
     @Override
-    public boolean onMouseScroll(UpOrDown scrollDirection, int amount) {
+    public boolean onMouseScroll(ModularScreen.UpOrDown scrollDirection, int amount) {
         switchMenu(scrollDirection.isUp() ? -1 : 1);
         return true;
     }

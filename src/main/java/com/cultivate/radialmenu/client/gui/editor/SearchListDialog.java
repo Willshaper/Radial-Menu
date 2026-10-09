@@ -17,12 +17,10 @@ import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.utils.Alignment;
-import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.Dialog;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 
 /**
  * A dialog listing options with a search box. Clicking an option picks it and closes the dialog.
@@ -41,7 +39,7 @@ final class SearchListDialog<T> extends Dialog<T> {
     private static final int DETAIL_GAP = 8;
     private static final int HEADER_COLOR = 0xFFFFD040;
 
-    private final StringValue search = new StringValue("");
+    private String searchQuery = "";
 
     /**
      * @param options options in display order; grouped options must already be next to each other
@@ -84,14 +82,12 @@ final class SearchListDialog<T> extends Dialog<T> {
                         .widthRel(1f)
                         .height(10))
                 .child(
-                    new TextFieldWidget().value(search)
-                        .autoUpdateOnChange(true)
+                    new LiveTextField(() -> searchQuery, value -> searchQuery = value)
                         .hintText(I18n.format("radialmenu.editor.search"))
                         .widthRel(1f)
                         .height(14))
                 .child(
                     new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
-                        .showScrollShadows(false)
                         .widthRel(1f)
                         .expanded()
                         .collapseDisabledChild()
@@ -100,8 +96,7 @@ final class SearchListDialog<T> extends Dialog<T> {
 
     private boolean matchesSearch(String searchText) {
         return searchText.contains(
-            search.getStringValue()
-                .trim()
+            searchQuery.trim()
                 .toLowerCase(Locale.ROOT));
     }
 
@@ -113,7 +108,8 @@ final class SearchListDialog<T> extends Dialog<T> {
             .color(HEADER_COLOR)
             .alignment(Alignment.BottomLeft)
             .asWidget()
-            .widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
+            .widthRel(1f)
+            .marginRight(EditorWidgets.LIST_ROW_INSET)
             .height(HEADER_HEIGHT)
             .setEnabledIf(
                 header -> optionSearchTexts.stream()
@@ -121,7 +117,8 @@ final class SearchListDialog<T> extends Dialog<T> {
     }
 
     private ButtonWidget<?> createOptionButton(T option, String label, String detail, String searchText) {
-        return new ButtonWidget<>().widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
+        return new ButtonWidget<>().widthRel(1f)
+            .marginRight(EditorWidgets.LIST_ROW_INSET)
             .height(ROW_HEIGHT)
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 FontRenderer font = Minecraft.getMinecraft().fontRenderer;

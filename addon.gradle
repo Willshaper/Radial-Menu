@@ -1,0 +1,12 @@
+// Compile-only stand-ins for classes of optional mods that are not on any maven. Never packaged into the jar.
+sourceSets {
+    stubs {
+        java {
+            srcDir("src/stubs/java")
+        }
+    }
+}
+
+dependencies {
+    compileOnly(sourceSets.stubs.output)
+}

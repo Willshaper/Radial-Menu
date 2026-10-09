@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
@@ -22,14 +24,12 @@ import com.cleanroommc.modularui.factory.ClientGUI;
 import com.cleanroommc.modularui.screen.ModularContainer;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
-import com.cleanroommc.modularui.screen.RecipeViewerSettingsImpl;
+import com.cleanroommc.modularui.screen.NEISettingsImpl;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.utils.Alignment;
-import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ColorPickerDialog;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.cultivate.radialmenu.client.ClientTickHandler;
 import com.cultivate.radialmenu.client.RadialMenuClient;
@@ -65,7 +65,7 @@ public final class SectionEditor {
     private static final String PANEL_NAME = "section_editor";
     private static final int PANEL_WIDTH = 260;
     private static final int PADDING = 7;
-    // Room for a few characters plus Angelica's color codes, such as &#FF8800TP.
+    // Room for a short label; the icon shrinks text to fit.
     private static final int TEXT_ICON_MAX_LENGTH = 32;
     private static final int COLOR_SWATCH_INSET = 3;
 
@@ -73,6 +73,7 @@ public final class SectionEditor {
     private final int index;
     private final boolean returnToManager;
     private final MenuStore store = RadialMenuClient.getMenuStore();
+    private final List<LiveTextField> textFields = new ArrayList<>();
     private ModularPanel panel;
     private boolean clearArmed;
 
@@ -115,12 +116,12 @@ public final class SectionEditor {
     public static void open(RadialMenu menu, int index, boolean returnToManager) {
         ClientTickHandler.openScreenNextTick(() -> {
             SectionEditor editor = new SectionEditor(menu, index, returnToManager);
-            RecipeViewerSettingsImpl recipeViewer = new RecipeViewerSettingsImpl();
+            NEISettingsImpl neiSettings = new NEISettingsImpl();
             UISettings settings;
 
-            // Client-only screens hide the recipe viewer by default, and NEI only draws on container screens.
-            recipeViewer.enable();
-            settings = new UISettings(recipeViewer);
+            // Client-only screens hide NEI by default, and NEI only draws on container screens.
+            neiSettings.enableNEI();
+            settings = new UISettings(neiSettings);
             settings.customContainer(ModularContainer::new);
             ClientGUI.open(new ModularScreen(RadialMenuMod.MODID, editor.buildPanel()), settings);
         });
@@ -173,9 +174,7 @@ public final class SectionEditor {
                 .child(
                     EditorWidgets.labeledRow(
                         "radialmenu.editor.name",
-                        new TextFieldWidget().autoUpdateOnChange(true)
-                            .value(new StringValue.Dynamic(() -> label, value -> label = value))
-                            .expanded()
+                        createTextField(() -> label, value -> label = value).expanded()
                             .height(EditorWidgets.ROW_HEIGHT)))
                 .child(buildIconRows())
                 .child(buildActionRows())
@@ -224,9 +223,7 @@ public final class SectionEditor {
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.editor.text",
-                    new TextFieldWidget().autoUpdateOnChange(true)
-                        .value(new StringValue.Dynamic(() -> iconText, value -> iconText = value))
-                        .setMaxLength(TEXT_ICON_MAX_LENGTH)
+                    createTextField(() -> iconText, value -> iconText = value).setMaxLength(TEXT_ICON_MAX_LENGTH)
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT),
                     new ButtonWidget<>().size(EditorWidgets.ROW_HEIGHT)
@@ -242,6 +239,13 @@ public final class SectionEditor {
                             return true;
                         }))
                     .setEnabledIf(row -> iconKind == IconKind.TEXT));
+    }
+
+    private LiveTextField createTextField(Supplier<String> getter, Consumer<String> setter) {
+        LiveTextField field = new LiveTextField(getter, setter);
+
+        textFields.add(field);
+        return field;
     }
 
     @Nullable
@@ -279,18 +283,14 @@ public final class SectionEditor {
                 actionRow(
                     ActionType.COMMAND,
                     "radialmenu.editor.command",
-                    new TextFieldWidget().autoUpdateOnChange(true)
-                        .value(new StringValue.Dynamic(() -> command, value -> command = value))
-                        .hintText("/home")
+                    createTextField(() -> command, value -> command = value).hintText("/home")
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT)))
             .child(
                 actionRow(
                     ActionType.CHAT,
                     "radialmenu.editor.message",
-                    new TextFieldWidget().autoUpdateOnChange(true)
-                        .value(new StringValue.Dynamic(() -> chatMessage, value -> chatMessage = value))
-                        .expanded()
+                    createTextField(() -> chatMessage, value -> chatMessage = value).expanded()
                         .height(EditorWidgets.ROW_HEIGHT)))
             .child(
                 actionRow(
@@ -443,6 +443,9 @@ public final class SectionEditor {
     }
 
     private void save() {
+        for (LiveTextField field : textFields) {
+            field.commit();
+        }
         if ((actionType == ActionType.SUBMENU) && createSubmenuOnSave) {
             submenuId = store.createMenu(getNewSubmenuName(), false)
                 .getId();

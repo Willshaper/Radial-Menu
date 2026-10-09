@@ -1,5 +1,6 @@
 package com.cultivate.radialmenu.client.gui.editor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,17 +13,16 @@ import net.minecraft.client.resources.I18n;
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.factory.ClientGUI;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.utils.Alignment;
-import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.ColorPickerDialog;
 import com.cleanroommc.modularui.widgets.ListWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
-import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.cultivate.radialmenu.client.ClientTickHandler;
 import com.cultivate.radialmenu.client.RadialMenuClient;
@@ -125,10 +125,9 @@ public final class MenuManager {
                     .height(12))
             .child(
                 new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
-                    .showScrollShadows(false)
                     .widthRel(1f)
                     .expanded()
-                    .children(menus, this::createMenuButton))
+                    .children(createMenuButtons(menus)))
             .child(
                 Flow.row()
                     .widthRel(1f)
@@ -167,12 +166,22 @@ public final class MenuManager {
                     }));
     }
 
+    private List<IWidget> createMenuButtons(List<RadialMenu> menus) {
+        List<IWidget> buttons = new ArrayList<>();
+
+        for (RadialMenu menu : menus) {
+            buttons.add(createMenuButton(menu));
+        }
+        return buttons;
+    }
+
     /**
      * A menu in the list, drawn like the section rows: name on the left, section count on the right. The selected menu
      * gets a tinted fill and an accent bar. Menus only reachable as submenus are marked with an arrow.
      */
     private ButtonWidget<?> createMenuButton(RadialMenu menu) {
-        return new ButtonWidget<>().widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
+        return new ButtonWidget<>().widthRel(1f)
+            .marginRight(EditorWidgets.LIST_ROW_INSET)
             .height(LIST_ROW_HEIGHT)
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 FontRenderer font = Minecraft.getMinecraft().fontRenderer;
@@ -218,9 +227,7 @@ public final class MenuManager {
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.editor.name",
-                    new TextFieldWidget().autoUpdateOnChange(true)
-                        .value(new StringValue.Dynamic(selected::getName, value -> selected.setName(value)))
-                        .expanded()
+                    new LiveTextField(selected::getName, value -> selected.setName(value)).expanded()
                         .height(EditorWidgets.ROW_HEIGHT)))
             .child(
                 EditorWidgets.labeledRow(
@@ -269,7 +276,6 @@ public final class MenuManager {
                         .width(RESET_WIDTH)))
             .child(
                 new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
-                    .showScrollShadows(false)
                     .widthRel(1f)
                     .expanded()
                     .collapseDisabledChild()
@@ -330,7 +336,8 @@ public final class MenuManager {
      */
     private Flow createSectionRow(int index) {
         return Flow.row()
-            .widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
+            .widthRel(1f)
+            .marginRight(EditorWidgets.LIST_ROW_INSET)
             .height(LIST_ROW_HEIGHT)
             .childPadding(1)
             .setEnabledIf(row -> index < selected.getSectionCount())

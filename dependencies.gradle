@@ -1,5 +1,5 @@
-// Versions match the GTNH 2.9.0 pack so the runtime classes line up exactly.
+// Versions match the GTNH 2.8.4 pack so the runtime classes line up exactly.
 dependencies {
-    implementation("com.github.GTNewHorizons:GTNHLib:0.11.46:dev")
-    implementation("com.github.GTNewHorizons:ModularUI2:2.3.88-1.7.10:dev")
+    implementation("com.github.GTNewHorizons:GTNHLib:0.7.10:dev")
+    implementation("com.github.GTNewHorizons:ModularUI2:2.2.18-1.7.10:dev")
 }

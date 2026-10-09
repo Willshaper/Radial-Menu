@@ -8,9 +8,9 @@ import net.minecraft.item.ItemStack;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.drawable.GuiTextures;
-import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
+import com.cleanroommc.modularui.integration.nei.NEIDragAndDropHandler;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
-import com.cleanroommc.modularui.theme.WidgetThemeEntry;
+import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.cleanroommc.modularui.widget.Widget;
 
 /**
@@ -19,8 +19,7 @@ import com.cleanroommc.modularui.widget.Widget;
  * <p>
  * Nothing is ever put into the player's inventory; the slot only remembers which item was dropped.
  */
-final class ItemDropSlot extends Widget<ItemDropSlot>
-    implements RecipeViewerGhostIngredientSlot<ItemStack>, Interactable {
+final class ItemDropSlot extends Widget<ItemDropSlot> implements NEIDragAndDropHandler, Interactable {
 
     private static final int SIZE = 18;
     private static final int ITEM_SIZE = 16;
@@ -63,7 +62,7 @@ final class ItemDropSlot extends Widget<ItemDropSlot>
     }
 
     @Override
-    public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
+    public void draw(ModularGuiContext context, WidgetTheme widgetTheme) {
         ItemStack stack = getter.get();
 
         if (stack != null) {

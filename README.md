@@ -2,13 +2,17 @@
 
 A configurable radial menu for Minecraft 1.7.10 / GT New Horizons. Client-side only; works on any server.
 
+This branch is the build for **GTNH 2.8.4**, made against the ModularUI2 (2.2.18) and GTNHLib (0.7.10) that 2.8.4
+ships. Its releases are tagged with a `-gtnh2.8.4` suffix. For GTNH 2.9, use the `master` branch and the releases
+without that suffix.
+
 Requires GTNHLib and ModularUI2 (both ship with GTNH). The ring is drawn with the Tessellator and plain GL state calls,
 so it works with Angelica.
 
 ## Download
 
-Get the jar from the [Releases](../../releases) page and put it in your `mods` folder. Use the plain
-`radialmenu-<version>.jar`; the `-dev` and `-sources` jars are for developers.
+Get the jar from the [Releases](../../releases) page and put it in your `mods` folder. For GTNH 2.8.4, use
+`radialmenu-<version>-gtnh2.8.4.jar`; the `-dev` and `-sources` jars are for developers.
 
 ## Using it
 
@@ -25,9 +29,8 @@ All three keys are under *Radial Menu* in Controls.
 
 Each section has a name, an icon and an action.
 
-- **Icons**: an item (drag it in from NEI, or use the item in your hand) or a short piece of colored text. With
-  Angelica 2.2.19 or newer, text icons and section names can use its color codes, such as `&#FF8800TP` or `&q` for
-  rainbow text.
+- **Icons**: an item (drag it in from NEI, or use the item in your hand) or a short piece of colored text. The
+  Angelica in GTNH 2.8.4 predates Angelica's color codes, so text icons use the one color picked for them.
 - **Actions**:
   - *Command*: runs like typing it in chat (client commands first, then the server).
   - *Chat Message*: sends a message.
@@ -66,8 +69,8 @@ the mod's config screen (Mods → Radial Menu → Config) or `config/radialmenu.
 Run `./gradlew build` with JDK 17 or newer. Gradle runs the build itself on JDK 25, using an installed copy or
 downloading one; the mod still targets Java 8. The jar ends up in `build/libs`, and its version comes from the git tag.
 
-GitHub Actions builds every push. Pushing a version tag, such as `1.4.0`, builds that version and publishes it on the
-Releases page with the jars attached.
+GitHub Actions builds every push to `master`. Pushing a version tag, such as `1.4.0-gtnh2.8.4` on this branch,
+builds that version and publishes it on the Releases page with the jars attached.
 
 ## License
 

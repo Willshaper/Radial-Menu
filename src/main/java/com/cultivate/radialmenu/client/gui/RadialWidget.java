@@ -10,7 +10,7 @@ import org.lwjgl.opengl.GL11;
 
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
-import com.cleanroommc.modularui.theme.WidgetThemeEntry;
+import com.cleanroommc.modularui.theme.WidgetTheme;
 import com.cleanroommc.modularui.utils.Platform;
 import com.cleanroommc.modularui.widget.Widget;
 import com.cultivate.radialmenu.client.KeyBindings;
@@ -60,7 +60,7 @@ final class RadialWidget extends Widget<RadialWidget> {
     }
 
     @Override
-    public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
+    public void draw(ModularGuiContext context, WidgetTheme widgetTheme) {
         RadialLayout layout = screen.createLayout(screen.getOpenScale());
         int hovered = screen.getHoveredSection();
         boolean editing = Interactable.hasShiftDown();
@@ -109,7 +109,10 @@ final class RadialWidget extends Widget<RadialWidget> {
                 layout.centerRadius,
                 centerActive ? hoverColor : RingColor.CENTER.getArgb());
         }
-        Platform.endDrawColor();
+        // Back to the default GUI state, which ModularUI2 2.2.18 has no helper for.
+        GL11.glEnable(GL11.GL_TEXTURE_2D);
+        GL11.glEnable(GL11.GL_ALPHA_TEST);
+        GL11.glDisable(GL11.GL_BLEND);
     }
 
     /**
