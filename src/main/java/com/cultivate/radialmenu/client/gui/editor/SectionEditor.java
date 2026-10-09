@@ -219,7 +219,7 @@ public final class SectionEditor {
                             .asWidget()
                             .expanded()
                             .heightRel(1f))
-                    .setEnabledIf(row -> iconKind == IconKind.ITEM))
+                    .onUpdateListener(EditorWidgets.showIf(() -> iconKind == IconKind.ITEM), true))
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.editor.text",
@@ -238,7 +238,7 @@ public final class SectionEditor {
                             colorPicker.openPanel();
                             return true;
                         }))
-                    .setEnabledIf(row -> iconKind == IconKind.TEXT));
+                    .onUpdateListener(EditorWidgets.showIf(() -> iconKind == IconKind.TEXT), true));
     }
 
     private LiveTextField createTextField(Supplier<String> getter, Consumer<String> setter) {
@@ -335,7 +335,7 @@ public final class SectionEditor {
 
     private Flow actionRow(ActionType type, String labelKey, IWidget... widgets) {
         return EditorWidgets.labeledRow(labelKey, widgets)
-            .setEnabledIf(row -> actionType == type);
+            .onUpdateListener(EditorWidgets.showIf(() -> actionType == type), true);
     }
 
     private String getKeybindButtonText() {

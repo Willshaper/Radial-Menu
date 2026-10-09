@@ -111,9 +111,11 @@ final class SearchListDialog<T> extends Dialog<T> {
             .widthRel(1f)
             .marginRight(EditorWidgets.LIST_ROW_INSET)
             .height(HEADER_HEIGHT)
-            .setEnabledIf(
-                header -> optionSearchTexts.stream()
-                    .anyMatch(this::matchesSearch));
+            .onUpdateListener(
+                EditorWidgets.showIf(
+                    () -> optionSearchTexts.stream()
+                        .anyMatch(this::matchesSearch)),
+                true);
     }
 
     private ButtonWidget<?> createOptionButton(T option, String label, String detail, String searchText) {
@@ -144,7 +146,7 @@ final class SearchListDialog<T> extends Dialog<T> {
                         true);
                 }
             })
-            .setEnabledIf(button -> matchesSearch(searchText))
+            .onUpdateListener(EditorWidgets.showIf(() -> matchesSearch(searchText)), true)
             .onMousePressed(mouseButton -> {
                 closeWith(option);
                 return true;

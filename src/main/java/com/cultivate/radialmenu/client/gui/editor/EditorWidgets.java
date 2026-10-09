@@ -1,5 +1,7 @@
 package com.cultivate.radialmenu.client.gui.editor;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.Supplier;
 
@@ -94,6 +96,24 @@ final class EditorWidgets {
             return text;
         }
         return font.trimStringToWidth(text, Math.max(0, maxWidth - font.getStringWidth(ELLIPSIS))) + ELLIPSIS;
+    }
+
+    /**
+     * Shows the widget only while the condition holds, for use with {@code onUpdateListener}. When the widget appears
+     * or
+     * disappears, the whole panel is laid out again: ModularUI2 2.2.18 only moves the widget's neighbours, so the
+     * columns and panel around it would keep their old size and rows would overlap.
+     */
+    static <W extends IWidget> Consumer<W> showIf(BooleanSupplier condition) {
+        return widget -> {
+            boolean show = condition.getAsBoolean();
+
+            if (widget.isEnabled() != show) {
+                widget.setEnabled(show);
+                widget.getPanel()
+                    .scheduleResize();
+            }
+        };
     }
 
     static <E extends Enum<E>> E cycle(E value, int offset) {

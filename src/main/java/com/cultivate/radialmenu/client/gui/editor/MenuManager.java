@@ -157,9 +157,11 @@ public final class MenuManager {
                         IKey.dynamic(
                             () -> I18n.format(
                                 deleteArmed ? "radialmenu.manager.delete_confirm" : "radialmenu.manager.delete")))
-                    .setEnabledIf(
-                        button -> store.getMenus()
-                            .size() > 1)
+                    .onUpdateListener(
+                        EditorWidgets.showIf(
+                            () -> store.getMenus()
+                                .size() > 1),
+                        true)
                     .onMousePressed(mouseButton -> {
                         deleteSelected();
                         return true;
@@ -255,9 +257,11 @@ public final class MenuManager {
                     .asWidget()
                     .widthRel(1f)
                     .height(WARNING_HEIGHT)
-                    .setEnabledIf(
-                        warning -> !selected.getHiddenSectionsWithContent()
-                            .isEmpty()))
+                    .onUpdateListener(
+                        EditorWidgets.showIf(
+                            () -> !selected.getHiddenSectionsWithContent()
+                                .isEmpty()),
+                        true))
             .child(
                 EditorWidgets.labeledRow(
                     "radialmenu.manager.in_cycle",
@@ -340,7 +344,7 @@ public final class MenuManager {
             .marginRight(EditorWidgets.LIST_ROW_INSET)
             .height(LIST_ROW_HEIGHT)
             .childPadding(1)
-            .setEnabledIf(row -> index < selected.getSectionCount())
+            .onUpdateListener(EditorWidgets.showIf(() -> index < selected.getSectionCount()), true)
             .child(
                 new ButtonWidget<>().expanded()
                     .heightRel(1f)
