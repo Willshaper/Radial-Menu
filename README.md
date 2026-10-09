@@ -7,8 +7,13 @@ so it works with Angelica.
 
 ## Download
 
-Get the jar from the [Releases](../../releases) page and put it in your `mods` folder. Use the plain
-`radialmenu-<version>.jar`; the `-dev` and `-sources` jars are for developers.
+Get the jar from the [Releases](../../releases) page and put it in your `mods` folder. The `-dev` and `-sources` jars
+are for developers.
+
+| GTNH version | Use |
+|---|---|
+| 2.9 | `radialmenu-<version>.jar`, from releases without a suffix |
+| 2.8.4 | `radialmenu-<version>-gtnh2.8.4.jar`, from releases tagged `-gtnh2.8.4` (built from the `gtnh-2.8.4` branch) |
 
 ## Using it
 
