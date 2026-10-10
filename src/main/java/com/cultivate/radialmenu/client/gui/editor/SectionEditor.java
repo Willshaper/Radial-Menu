@@ -22,6 +22,7 @@ import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.RecipeViewerSettingsImpl;
 import com.cleanroommc.modularui.screen.UISettings;
 import com.cleanroommc.modularui.value.StringValue;
+import com.cleanroommc.modularui.widget.Widget;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
@@ -58,7 +59,9 @@ public final class SectionEditor {
     private static final String PANEL_NAME = "section_editor";
     private static final int PANEL_WIDTH = 260;
     private static final int PADDING = 7;
-    private static final String NO_ICON_MARK = "×";
+    private static final int BUTTON_WIDTH = 56;
+    // Clear needs room for "Click again".
+    private static final int CLEAR_EXTRA_WIDTH = 10;
 
     private final RadialMenu menu;
     private final int index;
@@ -146,6 +149,7 @@ public final class SectionEditor {
                     EditorWidgets.titleBar(
                         IKey.str(I18n.format("radialmenu.editor.section_title", index + 1, menu.getName())),
                         this::finish))
+                .child(EditorWidgets.caption("radialmenu.editor.looks"))
                 .child(
                     EditorWidgets.labeledRow(
                         "radialmenu.editor.name",
@@ -154,7 +158,10 @@ public final class SectionEditor {
                             .expanded()
                             .height(EditorWidgets.ROW_HEIGHT)))
                 .child(buildIconRow())
+                .child(EditorWidgets.divider())
+                .child(EditorWidgets.caption("radialmenu.editor.does"))
                 .child(buildActionRows())
+                .child(EditorWidgets.divider())
                 .child(buildButtonRow()));
         return panel;
     }
@@ -174,13 +181,7 @@ public final class SectionEditor {
                     openIconPicker();
                     return true;
                 }),
-            new ButtonWidget<>().size(EditorWidgets.ROW_HEIGHT)
-                .overlay(IKey.str(NO_ICON_MARK))
-                .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.editor.remove_icon")))
-                .onMousePressed(mouseButton -> {
-                    icon = null;
-                    return true;
-                }))
+            EditorWidgets.symbolButton("x", "radialmenu.editor.remove_icon", () -> icon = null))
             .height(IconSlot.SIZE);
     }
 
@@ -379,28 +380,27 @@ public final class SectionEditor {
         return trimmed.isEmpty() ? I18n.format("radialmenu.editor.default_submenu_name") : trimmed;
     }
 
+    /**
+     * Clear on the left, away from Cancel and Save on the right.
+     */
     private Flow buildButtonRow() {
         return Flow.row()
             .widthRel(1f)
             .height(EditorWidgets.ROW_HEIGHT)
             .childPadding(4)
             .child(
-                EditorWidgets.button("radialmenu.editor.save", this::save)
-                    .expanded())
-            .child(
-                new ButtonWidget<>().height(EditorWidgets.ROW_HEIGHT)
-                    .overlay(
-                        IKey.dynamic(
-                            () -> I18n
-                                .format(clearArmed ? "radialmenu.editor.clear_confirm" : "radialmenu.editor.clear")))
-                    .onMousePressed(mouseButton -> {
-                        clear();
-                        return true;
-                    })
-                    .expanded())
+                EditorWidgets
+                    .dangerButton(
+                        () -> I18n.format(clearArmed ? "radialmenu.editor.clear_confirm" : "radialmenu.editor.clear"),
+                        this::clear)
+                    .width(BUTTON_WIDTH + CLEAR_EXTRA_WIDTH))
+            .child(new Widget<>().expanded())
             .child(
                 EditorWidgets.button("radialmenu.editor.cancel", this::finish)
-                    .expanded());
+                    .width(BUTTON_WIDTH))
+            .child(
+                EditorWidgets.accentButton("radialmenu.editor.save", this::save)
+                    .width(BUTTON_WIDTH));
     }
 
     private void save() {

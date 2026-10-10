@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.resources.I18n;
 
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
 import com.cleanroommc.modularui.drawable.GuiDraw;
@@ -40,6 +41,9 @@ final class SearchListDialog<T> extends Dialog<T> {
     private static final int HEADER_HEIGHT = 13;
     private static final int DETAIL_GAP = 8;
     private static final int HEADER_COLOR = 0xFF6EA0F0;
+    private static final int BADGE_FILL = 0xFF2A2C31;
+    private static final int BADGE_PADDING = 3;
+    private static final int BADGE_MARGIN = 2;
 
     private final StringValue search = new StringValue("");
 
@@ -119,11 +123,15 @@ final class SearchListDialog<T> extends Dialog<T> {
     private ButtonWidget<?> createOptionButton(T option, String label, String detail, String searchText) {
         return new ButtonWidget<>().widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
             .height(ROW_HEIGHT)
+            .background(IDrawable.EMPTY)
+            .hoverBackground(
+                (context, x, y, width, height, widgetTheme) -> GuiDraw
+                    .drawRect(x, y, width, height, EditorWidgets.ROW_HOVER_FILL))
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 FontRenderer font = Minecraft.getMinecraft().fontRenderer;
                 int detailWidth = font.getStringWidth(detail);
                 int labelWidth = width - (2 * EditorWidgets.TEXT_INSET)
-                    - (detail.isEmpty() ? 0 : detailWidth + DETAIL_GAP);
+                    - (detail.isEmpty() ? 0 : detailWidth + DETAIL_GAP + (2 * BADGE_PADDING));
                 float textY = y + ((height - EditorWidgets.FONT_HEIGHT) / 2f);
 
                 GuiDraw.drawText(
@@ -134,6 +142,13 @@ final class SearchListDialog<T> extends Dialog<T> {
                     EditorWidgets.TEXT_COLOR,
                     EditorWidgets.TEXT_SHADOW);
                 if (!detail.isEmpty()) {
+                    // The detail, such as the key a keybind is on, sits in a small badge.
+                    GuiDraw.drawRect(
+                        x + width - EditorWidgets.TEXT_INSET - detailWidth - BADGE_PADDING,
+                        y + BADGE_MARGIN,
+                        detailWidth + (2 * BADGE_PADDING),
+                        height - (2 * BADGE_MARGIN),
+                        BADGE_FILL);
                     GuiDraw.drawText(
                         detail,
                         x + width - EditorWidgets.TEXT_INSET - detailWidth,

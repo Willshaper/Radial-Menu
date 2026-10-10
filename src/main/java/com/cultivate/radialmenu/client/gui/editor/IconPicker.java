@@ -29,6 +29,7 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.Util;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
+import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
@@ -68,12 +69,19 @@ final class IconPicker extends Dialog<SectionIcon> {
      */
     enum Tab {
 
-        ITEMS,
-        SYMBOLS,
-        EFFECTS,
-        IMAGES,
-        HEADS,
-        TEXT;
+        ITEMS("cube"),
+        SYMBOLS("star"),
+        EFFECTS("flask"),
+        IMAGES("image"),
+        HEADS("user"),
+        TEXT("text-t");
+
+        // The bundled symbol shown on the tab.
+        private final String symbol;
+
+        Tab(String symbol) {
+            this.symbol = symbol;
+        }
 
         String getDisplayName() {
             return I18n.format("radialmenu.picker.tab." + name().toLowerCase(Locale.ROOT));
@@ -105,7 +113,9 @@ final class IconPicker extends Dialog<SectionIcon> {
     private static final int WIDTH = 320;
     private static final int HEIGHT = 240;
     private static final int PADDING = 7;
-    private static final int TAB_HEIGHT = 14;
+    private static final int TAB_HEIGHT = 16;
+    private static final int TAB_SYMBOL_SIZE = 9;
+    private static final int TAB_SYMBOL_GAP = 3;
     private static final int SEARCH_HEIGHT = 14;
     private static final int SWATCH_WIDTH = 28;
     private static final int SWATCH_INSET = 3;
@@ -187,6 +197,8 @@ final class IconPicker extends Dialog<SectionIcon> {
                             new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
                                 .showScrollShadows(false)
                                 .sizeRel(1f)
+                                .padding(2)
+                                .background(EditorWidgets.wellBackground())
                                 .child(grid)
                                 .setEnabledIf(list -> tab != Tab.TEXT))
                         .child(buildTextTab()))
@@ -201,48 +213,62 @@ final class IconPicker extends Dialog<SectionIcon> {
                                 .alignment(Alignment.CenterLeft)
                                 .asWidget()
                                 .expanded()
-                                .heightRel(1f))
-                        .child(
-                            EditorWidgets.button("radialmenu.editor.cancel", this::closeIfOpen)
-                                .width(BUTTON_WIDTH))));
+                                .heightRel(1f))));
     }
 
+    /**
+     * The tabs, as a strip of segments in a dark well: a symbol and the type's name, which is left out if it doesn't
+     * fit. The current tab is tinted and underlined.
+     */
     private Flow buildTabRow() {
         Flow row = Flow.row()
             .widthRel(1f)
             .height(TAB_HEIGHT)
-            .childPadding(2);
+            .padding(1)
+            .childPadding(1)
+            .background(EditorWidgets.wellBackground());
 
         for (Tab rowTab : Tab.values()) {
             row.child(
                 new ButtonWidget<>().expanded()
                     .heightRel(1f)
-                    .overlay((context, x, y, width, height, widgetTheme) -> {
-                        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
-                        String name = rowTab.getDisplayName();
-
-                        GuiDraw.drawText(
-                            EditorWidgets.fitToWidth(font, name, width - 2),
-                            x + ((width - Math.min(width - 2, font.getStringWidth(name))) / 2f),
-                            y + ((height - EditorWidgets.FONT_HEIGHT) / 2f),
-                            1f,
-                            rowTab == tab ? EditorWidgets.TEXT_COLOR : EditorWidgets.DETAIL_COLOR,
-                            EditorWidgets.TEXT_SHADOW);
-                        if (rowTab == tab) {
-                            GuiDraw.drawRect(
-                                x,
-                                y + height - TAB_ACCENT_HEIGHT,
-                                width,
-                                TAB_ACCENT_HEIGHT,
-                                EditorWidgets.ACCENT_COLOR);
-                        }
-                    })
+                    .background(IDrawable.EMPTY)
+                    .hoverBackground(
+                        (context, x, y, width, height, widgetTheme) -> GuiDraw
+                            .drawRect(x, y, width, height, EditorWidgets.ROW_HOVER_FILL))
+                    .overlay((context, x, y, width, height, widgetTheme) -> drawTab(rowTab, x, y, width, height))
+                    .tooltip(tooltip -> tooltip.addLine(rowTab.getDisplayName()))
                     .onMousePressed(mouseButton -> {
                         tab = rowTab;
                         return true;
                     }));
         }
         return row;
+    }
+
+    private void drawTab(Tab drawn, int x, int y, int width, int height) {
+        FontRenderer font = Minecraft.getMinecraft().fontRenderer;
+        String name = drawn.getDisplayName();
+        boolean current = drawn == tab;
+        int color = current ? EditorWidgets.TEXT_COLOR : EditorWidgets.DETAIL_COLOR;
+        int contentWidth = TAB_SYMBOL_SIZE + TAB_SYMBOL_GAP + font.getStringWidth(name);
+        boolean showName = contentWidth <= (width - 4);
+        float left = x + ((width - (showName ? contentWidth : TAB_SYMBOL_SIZE)) / 2f);
+
+        if (current) {
+            GuiDraw.drawRect(x, y, width, height, EditorWidgets.SELECTED_FILL);
+            GuiDraw.drawRect(x, y + height - TAB_ACCENT_HEIGHT, width, TAB_ACCENT_HEIGHT, EditorWidgets.ACCENT_COLOR);
+        }
+        new SymbolIcon(drawn.symbol, color).draw(left + (TAB_SYMBOL_SIZE / 2f), y + (height / 2f), TAB_SYMBOL_SIZE);
+        if (showName) {
+            GuiDraw.drawText(
+                name,
+                left + TAB_SYMBOL_SIZE + TAB_SYMBOL_GAP,
+                y + ((height - EditorWidgets.FONT_HEIGHT) / 2f),
+                1f,
+                color,
+                EditorWidgets.TEXT_SHADOW);
+        }
     }
 
     private Flow buildSearchRow() {
@@ -402,7 +428,7 @@ final class IconPicker extends Dialog<SectionIcon> {
                             .asWidget()
                             .expanded()
                             .heightRel(1f))
-                    .child(EditorWidgets.button("radialmenu.picker.use_text", () -> {
+                    .child(EditorWidgets.accentButton("radialmenu.picker.use_text", () -> {
                         TextIcon icon = createTextIcon();
 
                         if (icon != null) {
