@@ -18,7 +18,7 @@ import javax.annotation.Nullable;
  */
 final class MenuBackups {
 
-    static final int KEPT_BACKUPS = 3;
+    static final int KEPT_BACKUPS = 10;
 
     private static final String PREFIX = "menus-";
     private static final String SUFFIX = ".json";

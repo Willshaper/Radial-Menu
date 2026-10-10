@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,21 +55,18 @@ class MenuBackupsTest {
 
     @Test
     void keepsOnlyTheNewestBackupsNewestFirst() throws IOException {
-        for (int i = 0; i < 5; i++) {
+        int made = MenuBackups.KEPT_BACKUPS + 2;
+        List<String> names;
+
+        for (int i = 0; i < made; i++) {
             write("version " + i);
             backups.create(source, START.plusMinutes(i));
         }
-        assertEquals(
-            Arrays.asList(
-                "menus-2026-10-10_18-04-00.json",
-                "menus-2026-10-10_18-03-00.json",
-                "menus-2026-10-10_18-02-00.json"),
-            backups.list());
-        assertEquals("version 4", read("menus-2026-10-10_18-04-00.json"));
-        assertEquals(
-            MenuBackups.KEPT_BACKUPS,
-            backups.list()
-                .size());
+        names = backups.list();
+        assertEquals(MenuBackups.KEPT_BACKUPS, names.size());
+        assertEquals("menus-2026-10-10_18-11-00.json", names.get(0));
+        assertEquals("menus-2026-10-10_18-02-00.json", names.get(names.size() - 1));
+        assertEquals("version 11", read(names.get(0)));
     }
 
     @Test
