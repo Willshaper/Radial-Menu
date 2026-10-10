@@ -64,9 +64,9 @@ Each section has a name, an icon and an action.
 
 ## Menus
 
-The menu manager adds, renames, reorders and deletes menus, sets each menu's section count (2 to 24) and whether the
-switch key reaches it (*Switchable*). Menus that aren't switchable are only reachable as submenus and are marked with
-↳ in the list. The arrows next to each section move it around the ring.
+The menu manager adds, renames, reorders and deletes menus, and sets each menu's section count (2 to 24). *Submenu
+only* menus open only from a section in another menu: Tab and the scroll wheel skip them, and they're marked with ↳
+in the list. The arrows that show when hovering a section move it around the ring.
 
 To move sections to another menu, tick their boxes and click *Move to...*, then pick a menu or *+ New submenu*. They
 go into the first empty slots there, and its section count grows if needed. Hold Shift while picking to copy them

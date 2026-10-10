@@ -42,8 +42,8 @@ import com.cultivate.radialmenu.menu.icon.SectionIcon;
 import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 /**
- * Lists every menu and edits the selected one: name, order, section count, whether the switch key reaches it, the
- * ring colors, and its sections. Ticked sections can be moved or copied to another menu.
+ * Lists every menu and edits the selected one: name, order, section count, whether it is only a submenu, the ring
+ * colors, and its sections. Ticked sections can be moved or copied to another menu.
  *
  * <p>
  * Adding, removing or reordering menus reopens the screen so the menu list is rebuilt.
@@ -51,7 +51,7 @@ import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 public final class MenuManager {
 
     private static final String PANEL_NAME = "menu_manager";
-    private static final int PANEL_WIDTH = 432;
+    private static final int PANEL_WIDTH = 448;
     private static final int PANEL_HEIGHT = 264;
     private static final int PADDING = 7;
     private static final int GAP = 4;
@@ -68,8 +68,8 @@ public final class MenuManager {
     private static final int WARNING_COLOR = 0xFFFFAA40;
     private static final int WARNING_HEIGHT = 12;
     private static final int COUNT_WIDTH = 14;
-    private static final int GROUP_GAP = 8;
-    private static final int SWATCH_WIDTH = 14;
+    private static final int GROUP_GAP = 6;
+    private static final int SWATCH_WIDTH = EditorWidgets.ROW_HEIGHT;
     private static final int SWATCH_INSET = 3;
     // Drawn under each swatch so see-through colors look see-through.
     private static final int SWATCH_BACKDROP = 0xFF8B8B8B;
@@ -337,7 +337,7 @@ public final class MenuManager {
     }
 
     /**
-     * Section count, whether the switch key reaches the menu, and the ring colors, side by side.
+     * Section count, whether the menu is only a submenu, and the ring colors, side by side.
      */
     private Flow buildSettingsRow() {
         return Flow.row()
@@ -359,8 +359,8 @@ public final class MenuManager {
                 EditorWidgets
                     .symbolButton("plus", null, () -> selected.setSectionCount(selected.getSectionCount() + 1)))
             .child(new Widget<>().width(GROUP_GAP))
-            .child(EditorWidgets.inlineLabel("radialmenu.manager.in_cycle"))
-            .child(createSwitchableToggle())
+            .child(EditorWidgets.inlineLabel("radialmenu.manager.submenu_only"))
+            .child(createSubmenuOnlyToggle())
             .child(new Widget<>().width(GROUP_GAP))
             .child(EditorWidgets.inlineLabel("radialmenu.manager.colors"))
             .child(createColorSwatch(RingColor.SECTION))
@@ -374,14 +374,15 @@ public final class MenuManager {
     }
 
     /**
-     * An on/off switch for whether the switch key and scroll wheel reach this menu.
+     * An on/off switch for whether the menu only opens from a section in another menu, so the switch key and scroll
+     * wheel skip it.
      */
-    private ButtonWidget<?> createSwitchableToggle() {
+    private ButtonWidget<?> createSubmenuOnlyToggle() {
         return new ButtonWidget<>().size(TOGGLE_WIDTH, EditorWidgets.ROW_HEIGHT)
             .background(IDrawable.EMPTY)
             .hoverBackground(IDrawable.EMPTY)
             .overlay((context, x, y, width, height, widgetTheme) -> {
-                boolean on = selected.isInCycle();
+                boolean on = !selected.isInCycle();
                 int top = y + ((height - TOGGLE_HEIGHT) / 2);
                 int knobX = on ? (x + width - TOGGLE_KNOB - 1) : (x + 1);
 
@@ -396,7 +397,7 @@ public final class MenuManager {
                 GuiDraw
                     .drawRoundedRect(knobX, top + 1, TOGGLE_KNOB, TOGGLE_KNOB, TOGGLE_KNOB_COLOR, TOGGLE_KNOB / 2, 6);
             })
-            .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.manager.in_cycle_tooltip")))
+            .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.manager.submenu_only_tooltip")))
             .onMousePressed(mouseButton -> {
                 selected.setInCycle(!selected.isInCycle());
                 return true;
