@@ -21,8 +21,12 @@ import com.cultivate.radialmenu.menu.action.HotbarAction;
 import com.cultivate.radialmenu.menu.action.KeybindAction;
 import com.cultivate.radialmenu.menu.action.SectionAction;
 import com.cultivate.radialmenu.menu.action.SubmenuAction;
+import com.cultivate.radialmenu.menu.icon.EffectIcon;
+import com.cultivate.radialmenu.menu.icon.HeadIcon;
+import com.cultivate.radialmenu.menu.icon.ImageIcon;
 import com.cultivate.radialmenu.menu.icon.ItemIcon;
 import com.cultivate.radialmenu.menu.icon.SectionIcon;
+import com.cultivate.radialmenu.menu.icon.SymbolIcon;
 import com.cultivate.radialmenu.menu.icon.TextIcon;
 import com.cultivate.radialmenu.util.ColorMath;
 import com.google.gson.JsonArray;
@@ -56,6 +60,11 @@ final class MenuJson {
 
     private static final String ICON_ITEM = "item";
     private static final String ICON_TEXT = "text";
+    private static final String ICON_SYMBOL = "symbol";
+    private static final String ICON_EFFECT = "effect";
+    private static final String ICON_IMAGE = "image";
+    private static final String ICON_HEAD = "head";
+    private static final String KEY_COLOR = "color";
 
     private MenuJson() {}
 
@@ -183,7 +192,20 @@ final class MenuJson {
         } else if (icon instanceof TextIcon textIcon) {
             json.addProperty(KEY_TYPE, ICON_TEXT);
             json.addProperty("text", textIcon.getText());
-            json.addProperty("color", ColorMath.formatRgb(textIcon.getColor()));
+            json.addProperty(KEY_COLOR, ColorMath.formatRgb(textIcon.getColor()));
+        } else if (icon instanceof SymbolIcon symbolIcon) {
+            json.addProperty(KEY_TYPE, ICON_SYMBOL);
+            json.addProperty("symbol", symbolIcon.getName());
+            json.addProperty(KEY_COLOR, ColorMath.formatRgb(symbolIcon.getColor()));
+        } else if (icon instanceof EffectIcon effectIcon) {
+            json.addProperty(KEY_TYPE, ICON_EFFECT);
+            json.addProperty("effect", effectIcon.getEffectName());
+        } else if (icon instanceof ImageIcon imageIcon) {
+            json.addProperty(KEY_TYPE, ICON_IMAGE);
+            json.addProperty("file", imageIcon.getFileName());
+        } else if (icon instanceof HeadIcon headIcon) {
+            json.addProperty(KEY_TYPE, ICON_HEAD);
+            json.addProperty("player", headIcon.getPlayerName());
         }
         return json;
     }
@@ -206,7 +228,21 @@ final class MenuJson {
         if (ICON_TEXT.equals(type)) {
             return new TextIcon(
                 getString(json, "text", ""),
-                ColorMath.parseRgb(getString(json, "color", ""), TextIcon.DEFAULT_COLOR));
+                ColorMath.parseRgb(getString(json, KEY_COLOR, ""), TextIcon.DEFAULT_COLOR));
+        }
+        if (ICON_SYMBOL.equals(type)) {
+            return new SymbolIcon(
+                getString(json, "symbol", ""),
+                ColorMath.parseRgb(getString(json, KEY_COLOR, ""), SymbolIcon.DEFAULT_COLOR));
+        }
+        if (ICON_EFFECT.equals(type)) {
+            return new EffectIcon(getString(json, "effect", ""));
+        }
+        if (ICON_IMAGE.equals(type)) {
+            return new ImageIcon(getString(json, "file", ""));
+        }
+        if (ICON_HEAD.equals(type)) {
+            return new HeadIcon(getString(json, "player", ""));
         }
         RadialMenuMod.LOG.warn("ignoring unknown icon type {}", type);
         return null;

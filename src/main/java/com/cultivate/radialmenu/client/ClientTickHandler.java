@@ -54,7 +54,7 @@ public class ClientTickHandler {
         if (event.phase != TickEvent.Phase.START) {
             return;
         }
-        KeyPresser.releaseTappedKeys();
+        KeyPresser.onClientTick(mc);
         runPendingScreenOpener();
         runPendingAction(mc);
         if (!openKeyDown) {

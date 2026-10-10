@@ -50,6 +50,16 @@ public class RadialMenuConfig {
     @Config.Name("Remember Last Menu")
     public static boolean rememberLastMenu = true;
 
+    @Config.Comment("Run the section under the mouse when the open key is let go, as well as on click. Letting go over the center or an empty section just closes the menu.")
+    @Config.DefaultBoolean(false)
+    @Config.Name("Release to Select")
+    public static boolean releaseToSelect = false;
+
+    @Config.Comment("Show a submenu as a second ring outside the menu when the mouse rests on its section, instead of only opening it on click. Clicking the section still opens the submenu in place of the menu.")
+    @Config.DefaultBoolean(false)
+    @Config.Name("Inline Submenus")
+    public static boolean inlineSubmenus = false;
+
     @Config.Comment("Color of the sections, like #141414.")
     @Config.DefaultString("#141414")
     @Config.Name("Section Color")

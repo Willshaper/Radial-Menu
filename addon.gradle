@@ -1,0 +1,4 @@
+// The GTNH buildscript doesn't set up tests, so JUnit 5 is wired up here.
+tasks.named("test", Test) {
+    useJUnitPlatform()
+}

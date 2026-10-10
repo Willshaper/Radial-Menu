@@ -63,11 +63,16 @@ final class RadialWidget extends Widget<RadialWidget> {
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
         RadialLayout layout = screen.createLayout(screen.getOpenScale());
         int hovered = screen.getHoveredSection();
+        int inlineHovered = screen.getHoveredInlineSection();
         boolean editing = Interactable.hasShiftDown();
+        RadialMenu inlineMenu = screen.getInlineMenu();
 
         drawRing(layout, hovered, editing);
         drawIcons(layout, hovered);
-        drawLabels(layout, hovered, editing);
+        if (inlineMenu != null) {
+            drawInlineRing(layout, inlineMenu, inlineHovered, editing);
+        }
+        drawLabels(layout, hovered, inlineHovered, editing);
     }
 
     private void drawRing(RadialLayout layout, int hovered, boolean editing) {
@@ -83,23 +88,20 @@ final class RadialWidget extends Widget<RadialWidget> {
             double end = (layout.angleOf(i) + (layout.sectionAngle / 2)) - (gapAngle / 2);
             int color = (i == hovered) ? hoverColor : sectionColor;
 
-            if (menu.getSection(i)
+            if ((i != hovered) && (i == screen.getInlineParent())) {
+                // Marks which section the inline ring belongs to.
+                color = halveAlpha(hoverColor);
+            } else if (menu.getSection(i)
                 .isEmpty()) {
-                color = halveAlpha(color);
-            }
+                    color = halveAlpha(color);
+                }
             drawArc(layout, start, end, layout.innerRadius, layout.outerRadius, color);
             if (i == hovered) {
-                drawArc(
-                    layout,
-                    start,
-                    end,
-                    layout.outerRadius,
-                    layout.outerRadius + HOVER_RIM_WIDTH,
-                    (editing ? EDIT_COLOR : hoverColor) | 0xFF000000);
+                drawHoverRim(layout, start, end, layout.outerRadius, editing);
             }
         }
         if (layout.centerRadius > 0) {
-            boolean centerActive = (hovered == RadialLayout.CENTER) && screen.isInSubmenu();
+            boolean centerActive = (hovered == RadialLayout.CENTER) && screen.canGoBack();
 
             drawArc(
                 layout,
@@ -110,6 +112,56 @@ final class RadialWidget extends Widget<RadialWidget> {
                 centerActive ? hoverColor : RingColor.CENTER.getArgb());
         }
         Platform.endDrawColor();
+    }
+
+    private static void drawHoverRim(RadialLayout layout, double start, double end, float radius, boolean editing) {
+        drawArc(
+            layout,
+            start,
+            end,
+            radius,
+            radius + HOVER_RIM_WIDTH,
+            (editing ? EDIT_COLOR : RingColor.HOVER.getArgb()) | 0xFF000000);
+    }
+
+    /**
+     * Draws the inline ring: the sections of a submenu, in an arc outside the main ring centered on the section that
+     * opens it.
+     */
+    private void drawInlineRing(RadialLayout layout, RadialMenu inlineMenu, int hovered, boolean editing) {
+        int count = inlineMenu.getSectionCount();
+        double sectionAngle = layout.inlineSectionAngle(count);
+        double startAngle = layout.inlineStartAngle(screen.getInlineParent(), count);
+        float middleRadius = layout.inlineMiddleRadius();
+        double gapAngle = SECTION_GAP / middleRadius;
+        float iconSize = layout.inlineIconSize(count);
+
+        Platform.setupDrawColor();
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        for (int i = 0; i < count; i++) {
+            double start = startAngle + (i * sectionAngle) + (gapAngle / 2);
+            double end = (startAngle + ((i + 1) * sectionAngle)) - (gapAngle / 2);
+            int color = (i == hovered) ? RingColor.HOVER.getArgb() : RingColor.SECTION.getArgb();
+
+            if (inlineMenu.getSection(i)
+                .isEmpty()) {
+                color = halveAlpha(color);
+            }
+            drawArc(layout, start, end, layout.inlineInnerRadius, layout.inlineOuterRadius, color);
+            if (i == hovered) {
+                drawHoverRim(layout, start, end, layout.inlineOuterRadius, editing);
+            }
+        }
+        Platform.endDrawColor();
+        for (int i = 0; i < count; i++) {
+            double angle = startAngle + ((i + 0.5) * sectionAngle);
+
+            drawSectionIcon(
+                inlineMenu.getSection(i),
+                layout.xAt(angle, middleRadius),
+                layout.yAt(angle, middleRadius),
+                (i == hovered) ? iconSize * HOVER_ICON_GROWTH : iconSize);
+        }
     }
 
     /**
@@ -147,18 +199,23 @@ final class RadialWidget extends Widget<RadialWidget> {
             float x = layout.xAt(angle, radius);
             float y = layout.yAt(angle, radius);
             float size = (i == hovered) ? layout.iconSize * HOVER_ICON_GROWTH : layout.iconSize;
-            SectionIcon icon = section.getIcon();
 
-            if (icon != null) {
-                icon.draw(x, y, size);
-            } else if (section.isEmpty()) {
-                TextIcon.drawCenteredText(EMPTY_SECTION_MARK, PLACEHOLDER_COLOR, x, y, size);
-            } else {
-                TextIcon.drawCenteredText(getInitials(section.getLabel()), TEXT_COLOR, x, y, size);
-            }
+            drawSectionIcon(section, x, y, size);
         }
-        if (screen.isInSubmenu() && (layout.centerRadius > 0)) {
+        if (screen.canGoBack() && (layout.centerRadius > 0)) {
             TextIcon.drawCenteredText(BACK_MARK, TEXT_COLOR, layout.centerX, layout.centerY, layout.centerRadius);
+        }
+    }
+
+    private static void drawSectionIcon(MenuSection section, float x, float y, float size) {
+        SectionIcon icon = section.getIcon();
+
+        if (icon != null) {
+            icon.draw(x, y, size);
+        } else if (section.isEmpty()) {
+            TextIcon.drawCenteredText(EMPTY_SECTION_MARK, PLACEHOLDER_COLOR, x, y, size);
+        } else {
+            TextIcon.drawCenteredText(getInitials(section.getLabel()), TEXT_COLOR, x, y, size);
         }
     }
 
@@ -175,9 +232,10 @@ final class RadialWidget extends Widget<RadialWidget> {
      * Draws the menu name above the ring and a line about the hovered section below it. While Shift is held the line
      * below always says what a click will edit, even with labels turned off.
      */
-    private void drawLabels(RadialLayout layout, int hovered, boolean editing) {
-        float titleY = layout.centerY - layout.outerRadius - HOVER_RIM_WIDTH - LABEL_GAP - FONT_HEIGHT;
-        float hintY = layout.centerY + layout.outerRadius + HOVER_RIM_WIDTH + LABEL_GAP;
+    private void drawLabels(RadialLayout layout, int hovered, int inlineHovered, boolean editing) {
+        float titleY = layout.centerY - layout.extentRadius - HOVER_RIM_WIDTH - LABEL_GAP - FONT_HEIGHT;
+        float hintY = layout.centerY + layout.extentRadius + HOVER_RIM_WIDTH + LABEL_GAP;
+        RadialMenu inlineMenu = screen.getInlineMenu();
 
         if (RadialMenuConfig.showLabels) {
             drawCenteredString(getTitle(), layout.centerX, titleY, TEXT_COLOR);
@@ -190,9 +248,11 @@ final class RadialWidget extends Widget<RadialWidget> {
                 hintY,
                 EDIT_COLOR);
         } else if (RadialMenuConfig.showLabels) {
-            if (hovered == RadialLayout.CENTER) {
+            if ((inlineHovered != RadialLayout.NONE) && (inlineMenu != null)) {
+                drawSectionLabel(inlineMenu.getSection(inlineHovered), layout.centerX, hintY);
+            } else if (hovered == RadialLayout.CENTER) {
                 drawCenteredString(getCenterHint(), layout.centerX, hintY, HINT_COLOR);
-            } else {
+            } else if (hovered != RadialLayout.NONE) {
                 drawSectionLabel(
                     screen.getMenu()
                         .getSection(hovered),
@@ -218,7 +278,7 @@ final class RadialWidget extends Widget<RadialWidget> {
     private String getCenterHint() {
         int switchKey = KeyBindings.SWITCH.getKeyCode();
 
-        if (screen.isInSubmenu()) {
+        if (screen.canGoBack()) {
             return I18n.format("radialmenu.hint.back");
         }
         if (RadialMenuClient.getMenuStore()

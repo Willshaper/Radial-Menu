@@ -7,6 +7,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -22,6 +23,10 @@ import com.google.gson.JsonParser;
 
 /**
  * All menus, loaded from and saved to {@code config/radialmenu/menus.json}.
+ *
+ * <p>
+ * The first save of each game session first copies the file into {@code config/radialmenu/backups}, so the edits made
+ * in one session can be undone together.
  */
 public class MenuStore {
 
@@ -30,13 +35,18 @@ public class MenuStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting()
         .create();
 
+    private static final String BACKUP_DIRECTORY = "backups";
+
     private final File file;
+    private final MenuBackups backups;
     private final List<RadialMenu> menus = new ArrayList<>();
     @Nullable
     private String lastMenuId;
+    private boolean backedUpThisSession;
 
     public MenuStore(File file) {
         this.file = file;
+        this.backups = new MenuBackups(new File(file.getParentFile(), BACKUP_DIRECTORY));
     }
 
     /**
@@ -68,6 +78,9 @@ public class MenuStore {
     public void save() {
         File tempFile = new File(file.getPath() + ".tmp");
 
+        if (!backedUpThisSession && file.isFile()) {
+            backedUpThisSession = createBackup() != null;
+        }
         try {
             Files.createDirectories(
                 file.getParentFile()
@@ -79,6 +92,56 @@ public class MenuStore {
         } catch (IOException e) {
             RadialMenuMod.LOG.error("could not save {}", file, e);
         }
+    }
+
+    /**
+     * Copies menus.json as it is on disk into the backup folder.
+     *
+     * @return the backup's name, or null if there was nothing to back up or the copy failed
+     */
+    @Nullable
+    public String createBackup() {
+        if (!file.isFile()) {
+            return null;
+        }
+        try {
+            return backups.create(file, LocalDateTime.now());
+        } catch (IOException e) {
+            RadialMenuMod.LOG.error("could not back up {}", file, e);
+            return null;
+        }
+    }
+
+    /**
+     * @return the names of the backups, newest first
+     */
+    public List<String> getBackups() {
+        return backups.list();
+    }
+
+    /**
+     * Replaces the menus with a backup. The current file is backed up first, so a restore can be undone the same way.
+     *
+     * @return false if there is no backup with this name or it could not be copied
+     */
+    public boolean restoreBackup(String name) {
+        File backup = backups.find(name);
+        byte[] content;
+
+        if (backup == null) {
+            return false;
+        }
+        try {
+            // Read before backing up the current file, since that can delete the oldest backup.
+            content = Files.readAllBytes(backup.toPath());
+            createBackup();
+            Files.write(file.toPath(), content);
+        } catch (IOException e) {
+            RadialMenuMod.LOG.error("could not restore the menu backup {}", backup, e);
+            return false;
+        }
+        load();
+        return true;
     }
 
     private void backUpBrokenFile() {

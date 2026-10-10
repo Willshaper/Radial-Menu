@@ -2,8 +2,13 @@ package com.cultivate.radialmenu.client;
 
 import java.io.File;
 
+import net.minecraftforge.client.ClientCommandHandler;
+import net.minecraftforge.common.MinecraftForge;
+
 import com.cultivate.radialmenu.RadialMenuMod;
 import com.cultivate.radialmenu.menu.MenuStore;
+import com.cultivate.radialmenu.menu.icon.HeadIcon;
+import com.cultivate.radialmenu.menu.icon.ImageIcon;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 
@@ -13,6 +18,7 @@ import cpw.mods.fml.common.FMLCommonHandler;
 public final class RadialMenuClient {
 
     private static final String MENU_FILE = RadialMenuMod.MODID + "/menus.json";
+    private static final String ICON_DIRECTORY = RadialMenuMod.MODID + "/icons";
 
     private static MenuStore menuStore;
     private static boolean menusLoaded;
@@ -21,9 +27,12 @@ public final class RadialMenuClient {
 
     public static void preInit(File configDirectory) {
         menuStore = new MenuStore(new File(configDirectory, MENU_FILE));
+        ImageIcon.setDirectory(new File(configDirectory, ICON_DIRECTORY));
     }
 
     public static void init() {
+        KeyPresser keyPresser = new KeyPresser();
+
         KeyBindings.register();
         FMLCommonHandler.instance()
             .bus()
@@ -31,6 +40,20 @@ public final class RadialMenuClient {
         FMLCommonHandler.instance()
             .bus()
             .register(new ConfigChangeHandler());
+        FMLCommonHandler.instance()
+            .bus()
+            .register(keyPresser);
+        MinecraftForge.EVENT_BUS.register(keyPresser);
+        ClientCommandHandler.instance.registerCommand(new RadialMenuCommand());
+    }
+
+    /**
+     * Reads menus.json and the icon images again, and looks up player heads again.
+     */
+    public static void reload() {
+        getMenuStore().load();
+        ImageIcon.reloadAll();
+        HeadIcon.reloadAll();
     }
 
     /**

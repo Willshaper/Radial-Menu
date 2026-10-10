@@ -164,7 +164,34 @@ public final class MenuManager {
                     .onMousePressed(mouseButton -> {
                         deleteSelected();
                         return true;
-                    }));
+                    }))
+            .child(
+                EditorWidgets.button("radialmenu.manager.backups", this::openBackupPicker)
+                    .widthRel(1f));
+    }
+
+    /**
+     * Lists the backups of menus.json, newest first. Picking one replaces the menus with it; the menus as they were
+     * are backed up first, so that can be undone the same way.
+     */
+    private void openBackupPicker() {
+        List<String> backups = store.getBackups();
+
+        IPanelHandler.simple(
+            panel,
+            (parentPanel, player) -> new SearchListDialog<>(
+                "backup_picker",
+                I18n.format(backups.isEmpty() ? "radialmenu.manager.no_backups" : "radialmenu.manager.pick_backup"),
+                backups,
+                null,
+                name -> name,
+                null,
+                name -> {
+                    store.restoreBackup(name);
+                    open(null);
+                }),
+            true)
+            .openPanel();
     }
 
     /**
