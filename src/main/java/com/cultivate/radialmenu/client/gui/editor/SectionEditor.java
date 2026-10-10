@@ -1,14 +1,9 @@
 package com.cultivate.radialmenu.client.gui.editor;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import javax.annotation.Nullable;
 
@@ -16,24 +11,18 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.item.ItemStack;
-import net.minecraft.potion.Potion;
-import net.minecraft.util.Util;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IKey;
 import com.cleanroommc.modularui.api.widget.IWidget;
-import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.factory.ClientGUI;
 import com.cleanroommc.modularui.screen.ModularContainer;
 import com.cleanroommc.modularui.screen.ModularPanel;
 import com.cleanroommc.modularui.screen.ModularScreen;
 import com.cleanroommc.modularui.screen.RecipeViewerSettingsImpl;
 import com.cleanroommc.modularui.screen.UISettings;
-import com.cleanroommc.modularui.utils.Alignment;
 import com.cleanroommc.modularui.value.StringValue;
 import com.cleanroommc.modularui.widgets.ButtonWidget;
-import com.cleanroommc.modularui.widgets.ColorPickerDialog;
 import com.cleanroommc.modularui.widgets.layout.Flow;
 import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget;
 import com.cultivate.radialmenu.RadialMenuMod;
@@ -55,38 +44,21 @@ import com.cultivate.radialmenu.menu.icon.ImageIcon;
 import com.cultivate.radialmenu.menu.icon.ItemIcon;
 import com.cultivate.radialmenu.menu.icon.SectionIcon;
 import com.cultivate.radialmenu.menu.icon.SymbolIcon;
-import com.cultivate.radialmenu.menu.icon.SymbolSheet;
 import com.cultivate.radialmenu.menu.icon.TextIcon;
 
 /**
  * Edits one section: its name, icon and action.
  *
  * <p>
- * The screen opens as a client-only container so NEI shows its item list next to it; item icons are set by dragging an
- * item from NEI onto the icon slot. Symbols, effects and images are chosen from a grid instead.
+ * The screen opens as a client-only container so NEI shows its item list next to it; an item dragged from NEI onto the
+ * icon slot becomes the icon. Every type of icon can also be chosen in the {@link IconPicker}.
  */
 public final class SectionEditor {
-
-    private enum IconKind {
-        NONE,
-        ITEM,
-        TEXT,
-        SYMBOL,
-        EFFECT,
-        IMAGE,
-        HEAD
-    }
 
     private static final String PANEL_NAME = "section_editor";
     private static final int PANEL_WIDTH = 260;
     private static final int PADDING = 7;
-    // Room for a few characters plus Angelica's color codes, such as &#FF8800TP.
-    private static final int TEXT_ICON_MAX_LENGTH = 32;
-    private static final int COLOR_SWATCH_INSET = 3;
-    private static final int OPEN_FOLDER_WIDTH = 70;
-    // A player head is looked up online, so the preview waits until the name has stopped changing for this long.
-    private static final long HEAD_PREVIEW_DELAY_MILLIS = 1000L;
-    private static final int PLAYER_NAME_MAX_LENGTH = 16;
+    private static final String NO_ICON_MARK = "×";
 
     private final RadialMenu menu;
     private final int index;
@@ -96,17 +68,8 @@ public final class SectionEditor {
     private boolean clearArmed;
 
     private String label;
-    private IconKind iconKind = IconKind.NONE;
     @Nullable
-    private ItemIcon itemIcon;
-    private String iconText = "";
-    // Shared by text and symbol icons, so switching between them keeps the color.
-    private int iconColor = TextIcon.DEFAULT_COLOR;
-    private String symbolName = "";
-    private String effectName = "";
-    private String imageFile = "";
-    private String playerName = "";
-    private long playerNameChangedAt;
+    private SectionIcon icon;
 
     private ActionType actionType = ActionType.NONE;
     private String command = "";
@@ -126,7 +89,7 @@ public final class SectionEditor {
         this.index = index;
         this.returnToManager = returnToManager;
         this.label = section.getLabel();
-        loadIcon(section.getIcon());
+        this.icon = section.getIcon();
         loadAction(section.getAction());
     }
 
@@ -149,30 +112,6 @@ public final class SectionEditor {
             settings.customContainer(ModularContainer::new);
             ClientGUI.open(new ModularScreen(RadialMenuMod.MODID, editor.buildPanel()), settings);
         });
-    }
-
-    private void loadIcon(@Nullable SectionIcon icon) {
-        if (icon instanceof ItemIcon loadedItemIcon) {
-            iconKind = IconKind.ITEM;
-            itemIcon = loadedItemIcon;
-        } else if (icon instanceof TextIcon textIcon) {
-            iconKind = IconKind.TEXT;
-            iconText = textIcon.getText();
-            iconColor = textIcon.getColor();
-        } else if (icon instanceof SymbolIcon symbolIcon) {
-            iconKind = IconKind.SYMBOL;
-            symbolName = symbolIcon.getName();
-            iconColor = symbolIcon.getColor();
-        } else if (icon instanceof EffectIcon effectIcon) {
-            iconKind = IconKind.EFFECT;
-            effectName = effectIcon.getEffectName();
-        } else if (icon instanceof ImageIcon imageIcon) {
-            iconKind = IconKind.IMAGE;
-            imageFile = imageIcon.getFileName();
-        } else if (icon instanceof HeadIcon headIcon) {
-            iconKind = IconKind.HEAD;
-            playerName = headIcon.getPlayerName();
-        }
     }
 
     private void loadAction(@Nullable SectionAction action) {
@@ -215,242 +154,72 @@ public final class SectionEditor {
                             .value(new StringValue.Dynamic(() -> label, value -> label = value))
                             .expanded()
                             .height(EditorWidgets.ROW_HEIGHT)))
-                .child(buildIconRows())
+                .child(buildIconRow())
                 .child(buildActionRows())
                 .child(buildButtonRow()));
         return panel;
     }
 
-    private Flow buildIconRows() {
-        IPanelHandler colorPicker = IPanelHandler.simple(
-            panel,
-            (parentPanel,
-                player) -> new ColorPickerDialog(color -> iconColor = color & 0xFFFFFF, 0xFF000000 | iconColor, false)
-                    .relative(parentPanel)
-                    .top(0)
-                    .leftRel(1f),
-            true);
-
-        return Flow.column()
-            .widthRel(1f)
-            .coverChildrenHeight()
-            .childPadding(4)
-            .collapseDisabledChild()
-            .child(
-                EditorWidgets.labeledRow(
-                    "radialmenu.editor.icon",
-                    EditorWidgets.cycleButton(
-                        () -> I18n.format(
-                            "radialmenu.editor.icon." + iconKind.name()
-                                .toLowerCase(Locale.ROOT)),
-                        offset -> iconKind = EditorWidgets.cycle(iconKind, offset))
-                        .expanded()))
-            .child(
-                EditorWidgets
-                    .labeledRow(
-                        "radialmenu.editor.item",
-                        new ItemDropSlot(this::getIconStack, this::setIconStack),
-                        EditorWidgets.button("radialmenu.editor.use_held", this::useHeldItem)
-                            .width(70),
-                        IKey.lang("radialmenu.editor.drag_hint")
-                            .color(EditorWidgets.HINT_COLOR)
-                            .alignment(Alignment.CenterLeft)
-                            .asWidget()
-                            .expanded()
-                            .heightRel(1f))
-                    .setEnabledIf(row -> iconKind == IconKind.ITEM))
-            .child(
-                EditorWidgets.labeledRow(
-                    "radialmenu.editor.text",
-                    new TextFieldWidget().autoUpdateOnChange(true)
-                        .value(new StringValue.Dynamic(() -> iconText, value -> iconText = value))
-                        .setMaxLength(TEXT_ICON_MAX_LENGTH)
-                        .expanded()
-                        .height(EditorWidgets.ROW_HEIGHT),
-                    createColorSwatch(colorPicker))
-                    .setEnabledIf(row -> iconKind == IconKind.TEXT))
-            .child(
-                EditorWidgets
-                    .labeledRow(
-                        "radialmenu.editor.symbol",
-                        new IconPreview(this::createIcon),
-                        createChooseButton(() -> symbolName, this::openSymbolPicker),
-                        createColorSwatch(colorPicker))
-                    .setEnabledIf(row -> iconKind == IconKind.SYMBOL))
-            .child(
-                EditorWidgets
-                    .labeledRow(
-                        "radialmenu.editor.effect",
-                        new IconPreview(this::createIcon),
-                        createChooseButton(this::getEffectButtonText, this::openEffectPicker))
-                    .setEnabledIf(row -> iconKind == IconKind.EFFECT))
-            .child(
-                EditorWidgets
-                    .labeledRow(
-                        "radialmenu.editor.image",
-                        new IconPreview(this::createIcon),
-                        createChooseButton(() -> imageFile, this::openImagePicker),
-                        EditorWidgets.button("radialmenu.editor.open_folder", SectionEditor::openIconFolder)
-                            .width(OPEN_FOLDER_WIDTH))
-                    .setEnabledIf(row -> iconKind == IconKind.IMAGE))
-            .child(
-                EditorWidgets.labeledRow(
-                    "radialmenu.editor.player",
-                    new TextFieldWidget().autoUpdateOnChange(true)
-                        .value(new StringValue.Dynamic(() -> playerName, value -> {
-                            playerName = value;
-                            playerNameChangedAt = System.currentTimeMillis();
-                        }))
-                        .setMaxLength(PLAYER_NAME_MAX_LENGTH)
-                        .expanded()
-                        .height(EditorWidgets.ROW_HEIGHT),
-                    new IconPreview(this::getHeadPreview))
-                    .setEnabledIf(row -> iconKind == IconKind.HEAD));
-    }
-
-    private ButtonWidget<?> createColorSwatch(IPanelHandler colorPicker) {
-        return new ButtonWidget<>().size(EditorWidgets.ROW_HEIGHT)
-            .overlay(
-                (context, x, y, width, height, widgetTheme) -> GuiDraw.drawRect(
-                    x + COLOR_SWATCH_INSET,
-                    y + COLOR_SWATCH_INSET,
-                    width - (2 * COLOR_SWATCH_INSET),
-                    height - (2 * COLOR_SWATCH_INSET),
-                    0xFF000000 | iconColor))
-            .onMousePressed(mouseButton -> {
-                colorPicker.openPanel();
-                return true;
-            });
-    }
-
     /**
-     * A button showing the current choice, or "Choose..." if there is none, that opens a picker.
+     * The icon row: the icon, which also takes items dragged in from NEI, a button that opens the icon picker, and a
+     * button that removes the icon.
      */
-    private ButtonWidget<?> createChooseButton(Supplier<String> current, Runnable openPicker) {
-        return new ButtonWidget<>().expanded()
-            .height(EditorWidgets.ROW_HEIGHT)
-            .overlay(IKey.dynamic(() -> {
-                String text = current.get();
-
-                return text.isEmpty() ? I18n.format("radialmenu.editor.choose") : text;
-            }))
-            .onMousePressed(mouseButton -> {
-                openPicker.run();
-                return true;
-            });
+    private Flow buildIconRow() {
+        return EditorWidgets.labeledRow(
+            "radialmenu.editor.icon",
+            new IconSlot(() -> icon, stack -> icon = new ItemIcon(stack), () -> icon = null),
+            new ButtonWidget<>().expanded()
+                .height(EditorWidgets.ROW_HEIGHT)
+                .overlay(IKey.dynamic(this::describeIcon))
+                .onMousePressed(mouseButton -> {
+                    openIconPicker();
+                    return true;
+                }),
+            new ButtonWidget<>().size(EditorWidgets.ROW_HEIGHT)
+                .overlay(IKey.str(NO_ICON_MARK))
+                .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.editor.remove_icon")))
+                .onMousePressed(mouseButton -> {
+                    icon = null;
+                    return true;
+                }));
     }
 
-    @Nullable
-    private SectionIcon getHeadPreview() {
-        if ((System.currentTimeMillis() - playerNameChangedAt) < HEAD_PREVIEW_DELAY_MILLIS) {
-            return null;
-        }
-        return createIcon();
-    }
-
-    private String getEffectButtonText() {
-        return effectName.isEmpty() ? "" : I18n.format(effectName);
-    }
-
-    private void openIconPicker(String name, String titleKey, List<IconPickerDialog.Choice> choices, String emptyHint,
-        Consumer<String> onPick) {
-        IPanelHandler
-            .simple(
-                panel,
-                (parentPanel, player) -> new IconPickerDialog(
-                    name,
-                    I18n.format(titleKey),
-                    choices,
-                    emptyHint,
-                    choice -> onPick.accept(choice.getValue())),
-                true)
+    private void openIconPicker() {
+        IPanelHandler.simple(panel, (parentPanel, player) -> new IconPicker(icon, picked -> icon = picked), true)
             .openPanel();
     }
 
-    private void openSymbolPicker() {
-        List<IconPickerDialog.Choice> choices = new ArrayList<>();
-
-        for (SymbolSheet.Symbol symbol : SymbolSheet.getSymbols()) {
-            choices.add(
-                new IconPickerDialog.Choice(
-                    symbol.getName(),
-                    symbol.getName(),
-                    symbol.getSearchText(),
-                    new SymbolIcon(symbol.getName(), iconColor)));
-        }
-        openIconPicker("symbol_picker", "radialmenu.editor.pick_symbol", choices, "", picked -> symbolName = picked);
-    }
-
-    private void openEffectPicker() {
-        List<IconPickerDialog.Choice> choices = new ArrayList<>();
-
-        for (Potion potion : EffectIcon.getEffectsWithIcons()) {
-            choices.add(
-                new IconPickerDialog.Choice(
-                    potion.getName(),
-                    I18n.format(potion.getName()),
-                    potion.getName(),
-                    new EffectIcon(potion.getName())));
-        }
-        openIconPicker("effect_picker", "radialmenu.editor.pick_effect", choices, "", picked -> effectName = picked);
-    }
-
-    private void openImagePicker() {
-        List<IconPickerDialog.Choice> choices = new ArrayList<>();
-
-        // Read again each time, so images added while the game runs show up.
-        ImageIcon.reloadAll();
-        for (String file : ImageIcon.listFiles()) {
-            choices.add(new IconPickerDialog.Choice(file, file, "", new ImageIcon(file)));
-        }
-        openIconPicker(
-            "image_picker",
-            "radialmenu.editor.pick_image",
-            choices,
-            I18n.format("radialmenu.editor.no_images"),
-            picked -> imageFile = picked);
-    }
-
     /**
-     * Opens the icon folder in the system's file manager.
+     * @return the icon's type and what it shows, such as "Symbol: house", or "Choose..." if there is none
      */
-    private static void openIconFolder() {
-        File folder = ImageIcon.getDirectory();
-        String path;
-        String[] command;
+    private String describeIcon() {
+        String type;
+        String value;
 
-        if (folder == null) {
-            return;
+        if (icon instanceof ItemIcon itemIcon) {
+            type = "item";
+            value = itemIcon.getStack() == null ? itemIcon.getItemId()
+                : itemIcon.getStack()
+                    .getDisplayName();
+        } else if (icon instanceof SymbolIcon symbolIcon) {
+            type = "symbol";
+            value = symbolIcon.getName();
+        } else if (icon instanceof EffectIcon effectIcon) {
+            type = "effect";
+            value = I18n.format(effectIcon.getEffectName());
+        } else if (icon instanceof ImageIcon imageIcon) {
+            type = "image";
+            value = imageIcon.getFileName();
+        } else if (icon instanceof HeadIcon headIcon) {
+            type = "head";
+            value = headIcon.getPlayerName();
+        } else if (icon instanceof TextIcon textIcon) {
+            type = "text";
+            value = textIcon.getText();
+        } else {
+            return I18n.format("radialmenu.editor.choose");
         }
-        path = folder.getAbsolutePath();
-        command = switch (Util.getOSType()) {
-            case WINDOWS -> new String[] { "explorer", path };
-            case OSX -> new String[] { "open", path };
-            default -> new String[] { "xdg-open", path };
-        };
-        try {
-            Runtime.getRuntime()
-                .exec(command);
-        } catch (IOException e) {
-            RadialMenuMod.LOG.warn("could not open the icon folder {}", path, e);
-        }
-    }
-
-    @Nullable
-    private ItemStack getIconStack() {
-        return itemIcon == null ? null : itemIcon.getStack();
-    }
-
-    private void setIconStack(@Nullable ItemStack stack) {
-        itemIcon = stack == null ? null : new ItemIcon(stack);
-    }
-
-    private void useHeldItem() {
-        ItemStack held = Minecraft.getMinecraft().thePlayer.getHeldItem();
-
-        if (held != null) {
-            setIconStack(held);
-        }
+        return I18n.format("radialmenu.icon." + type) + ": " + value;
     }
 
     private Flow buildActionRows() {
@@ -639,7 +408,7 @@ public final class SectionEditor {
             submenuId = store.createMenu(getNewSubmenuName(), false)
                 .getId();
         }
-        menu.setSection(index, new MenuSection(label.trim(), createIcon(), createAction()));
+        menu.setSection(index, new MenuSection(label.trim(), icon, createAction()));
         store.save();
         finish();
     }
@@ -663,21 +432,6 @@ public final class SectionEditor {
         } else {
             panel.closeIfOpen();
         }
-    }
-
-    @Nullable
-    private SectionIcon createIcon() {
-        return switch (iconKind) {
-            case ITEM -> itemIcon;
-            case TEXT -> iconText.trim()
-                .isEmpty() ? null : new TextIcon(iconText.trim(), iconColor);
-            case SYMBOL -> symbolName.isEmpty() ? null : new SymbolIcon(symbolName, iconColor);
-            case EFFECT -> effectName.isEmpty() ? null : new EffectIcon(effectName);
-            case IMAGE -> imageFile.isEmpty() ? null : new ImageIcon(imageFile);
-            case HEAD -> playerName.trim()
-                .isEmpty() ? null : new HeadIcon(playerName.trim());
-            case NONE -> null;
-        };
     }
 
     @Nullable

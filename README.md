@@ -35,16 +35,19 @@ All three keys are under *Radial Menu* in Controls.
 
 Each section has a name, an icon and an action.
 
-- **Icons**:
-  - *Item*: drag an item in from NEI, or use the item in your hand.
+- **Icons**: *Choose* opens the icon picker, with a tab per type, a search box and a grid. Dragging an item from NEI
+  onto the editor's icon slot also works, and right clicking the slot or clicking × removes the icon.
+  - *Items*: every item in the game and its variants, searchable by name or id. Drag one in from NEI or use *Held
+    Item* instead if that's quicker.
+  - *Symbols*: about 1,400 symbols from [Phosphor](https://phosphoricons.com), in the color of the swatch next to
+    the search box.
+  - *Effects*: the icon of a potion effect, from vanilla or any mod.
+  - *Images*: PNGs of your own, up to 512 × 512 pixels, from `config/radialmenu/icons` (*Open Folder* opens it).
+  - *Heads*: a player's face. The tab lists the players on the server; type any other name in the search box. If
+    the player is nearby their skin is used, otherwise it's looked up by name from Mojang, the same way the game loads
+    skins. Names Mojang doesn't know show Steve.
   - *Text*: a short piece of colored text. With Angelica 2.2.19 or newer, text icons and section names can use its
     color codes, such as `&#FF8800TP` or `&q` for rainbow text.
-  - *Symbol*: one of about 1,400 symbols from [Phosphor](https://phosphoricons.com), in any color. *Choose* opens a
-    searchable grid.
-  - *Effect*: the icon of a potion effect, from vanilla or any mod.
-  - *Image*: a PNG of your own, up to 512 × 512 pixels. Put it in `config/radialmenu/icons` (*Open Folder* opens it).
-  - *Player Head*: a player's face. If they're nearby, their skin is used; otherwise it's looked up by name from
-    Mojang, the same way the game loads skins. Names Mojang doesn't know show Steve.
 - **Actions**:
   - *Command*: runs like typing it in chat (client commands first, then the server).
   - *Chat Message*: sends a message.
