@@ -1,0 +1,6 @@
+{
+  "radialmenu_dark": "radialmenu:dark",
+  "screens": {
+    "radialmenu": "radialmenu_dark"
+  }
+}

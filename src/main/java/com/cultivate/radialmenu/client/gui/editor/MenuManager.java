@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -50,8 +51,11 @@ public final class MenuManager {
 
     private static final String PANEL_NAME = "menu_manager";
     private static final int PANEL_WIDTH = 380;
-    private static final int PANEL_HEIGHT = 250;
+    private static final int PANEL_HEIGHT = 264;
     private static final int PADDING = 7;
+    private static final int TITLE_GAP = 4;
+    // Given as a fixed height, like the column width below, so MUI2 sizes the rows inside it correctly.
+    private static final int BODY_HEIGHT = PANEL_HEIGHT - (2 * PADDING) - EditorWidgets.TITLE_HEIGHT - TITLE_GAP;
     private static final int MENU_LIST_WIDTH = 120;
     // Given as a fixed width: MUI2 does not size rows inside a column that only has a relative width.
     private static final int SELECTED_COLUMN_WIDTH = PANEL_WIDTH - (2 * PADDING) - MENU_LIST_WIDTH - PADDING;
@@ -59,8 +63,6 @@ public final class MenuManager {
     private static final int MOVE_BUTTON_WIDTH = 12;
     private static final int ICON_SIZE = 16;
     private static final int NUMBER_WIDTH = 18;
-    private static final int SELECTED_FILL = 0x503C78D8;
-    private static final int SELECTED_ACCENT = 0xFF3C78D8;
     private static final int ACCENT_WIDTH = 2;
     private static final int WARNING_COLOR = 0xFFFFAA40;
     private static final int WARNING_HEIGHT = 18;
@@ -72,8 +74,8 @@ public final class MenuManager {
     private static final String SUBMENU_MARK = "↳ ";
     private static final int CHECKBOX_WIDTH = 12;
     private static final int CHECKBOX_SIZE = 8;
-    private static final int CHECKBOX_BORDER = 0xFFA0A0A0;
-    private static final int CHECKBOX_INSIDE = 0xFF202020;
+    private static final int CHECKBOX_BORDER = 0xFF6B6F78;
+    private static final int ROW_CONTROL_HOVER = 0xFF3A3D44;
     private static final int MOVE_TO_WIDTH = 80;
 
     private final MenuStore store = RadialMenuClient.getMenuStore();
@@ -132,11 +134,17 @@ public final class MenuManager {
         panel = new ModularPanel(PANEL_NAME).size(PANEL_WIDTH, PANEL_HEIGHT)
             .padding(PADDING);
         return panel.child(
-            Flow.row()
+            Flow.column()
                 .sizeRel(1f)
-                .childPadding(PADDING)
-                .child(buildMenuColumn())
-                .child(buildSelectedColumn()));
+                .childPadding(TITLE_GAP)
+                .child(EditorWidgets.titleBar(IKey.lang("radialmenu.manager.title"), panel::closeIfOpen))
+                .child(
+                    Flow.row()
+                        .widthRel(1f)
+                        .height(BODY_HEIGHT)
+                        .childPadding(PADDING)
+                        .child(buildMenuColumn())
+                        .child(buildSelectedColumn())));
     }
 
     private Flow buildMenuColumn() {
@@ -237,8 +245,8 @@ public final class MenuManager {
                 float textY = y + ((height - EditorWidgets.FONT_HEIGHT) / 2f);
 
                 if (menu == selected) {
-                    GuiDraw.drawRect(x, y, width, height, SELECTED_FILL);
-                    GuiDraw.drawRect(x, y, ACCENT_WIDTH, height, SELECTED_ACCENT);
+                    GuiDraw.drawRect(x, y, width, height, EditorWidgets.SELECTED_FILL);
+                    GuiDraw.drawRect(x, y, ACCENT_WIDTH, height, EditorWidgets.ACCENT_COLOR);
                 }
                 GuiDraw.drawText(
                     EditorWidgets.fitToWidth(font, name, width - (3 * EditorWidgets.TEXT_INSET) - countWidth),
@@ -246,14 +254,14 @@ public final class MenuManager {
                     textY,
                     1f,
                     EditorWidgets.TEXT_COLOR,
-                    true);
+                    EditorWidgets.TEXT_SHADOW);
                 GuiDraw.drawText(
                     count,
                     x + width - EditorWidgets.TEXT_INSET - countWidth,
                     textY,
                     1f,
                     EditorWidgets.DETAIL_COLOR,
-                    true);
+                    EditorWidgets.TEXT_SHADOW);
             })
             .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.manager.menu_tooltip")))
             .onMousePressed(mouseButton -> {
@@ -489,15 +497,17 @@ public final class MenuManager {
     }
 
     /**
-     * One section in the list: a button that edits it, and arrows that move it up or down the ring.
+     * One section in the list: a checkbox, a button that edits it, and arrows that move it up or down the ring. The
+     * checkbox and arrows only show while the mouse is over the row, or the checkbox while it is ticked.
      */
     private Flow createSectionRow(int index) {
-        return Flow.row()
-            .widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
+        Flow row = Flow.row();
+
+        return row.widthRelOffset(1f, -EditorWidgets.LIST_ROW_INSET)
             .height(LIST_ROW_HEIGHT)
             .childPadding(1)
-            .setEnabledIf(row -> index < selected.getSectionCount())
-            .child(createCheckbox(index))
+            .setEnabledIf(shown -> index < selected.getSectionCount())
+            .child(createCheckbox(index, row::isBelowMouse))
             .child(
                 new ButtonWidget<>().expanded()
                     .heightRel(1f)
@@ -507,27 +517,38 @@ public final class MenuManager {
                         SectionEditor.open(selected, index, true);
                         return true;
                     }))
-            .child(createMoveButton(index, -1, "▲"))
-            .child(createMoveButton(index, 1, "▼"));
+            .child(createMoveButton(index, -1, "▲", row::isBelowMouse))
+            .child(createMoveButton(index, 1, "▼", row::isBelowMouse));
     }
 
     /**
      * A box that ticks the section for moving to another menu.
      */
-    private ButtonWidget<?> createCheckbox(int index) {
+    private ButtonWidget<?> createCheckbox(int index, BooleanSupplier rowHovered) {
         return new ButtonWidget<>().width(CHECKBOX_WIDTH)
             .heightRel(1f)
+            .background(IDrawable.EMPTY)
+            .hoverBackground(IDrawable.EMPTY)
             .overlay((context, x, y, width, height, widgetTheme) -> {
                 int boxX = x + ((width - CHECKBOX_SIZE) / 2);
                 int boxY = y + ((height - CHECKBOX_SIZE) / 2);
+                boolean isTicked = ticked.contains(index);
 
-                GuiDraw.drawRect(boxX, boxY, CHECKBOX_SIZE, CHECKBOX_SIZE, CHECKBOX_BORDER);
+                if (!isTicked && !rowHovered.getAsBoolean()) {
+                    return;
+                }
+                GuiDraw.drawRect(
+                    boxX,
+                    boxY,
+                    CHECKBOX_SIZE,
+                    CHECKBOX_SIZE,
+                    isTicked ? EditorWidgets.ACCENT_COLOR : CHECKBOX_BORDER);
                 GuiDraw.drawRect(
                     boxX + 1,
                     boxY + 1,
                     CHECKBOX_SIZE - 2,
                     CHECKBOX_SIZE - 2,
-                    ticked.contains(index) ? SELECTED_ACCENT : CHECKBOX_INSIDE);
+                    isTicked ? EditorWidgets.ACCENT_COLOR : EditorWidgets.FIELD_FILL);
             })
             .onMousePressed(mouseButton -> {
                 if (!ticked.remove(index)) {
@@ -538,10 +559,20 @@ public final class MenuManager {
             });
     }
 
-    private ButtonWidget<?> createMoveButton(int index, int offset, String arrow) {
+    private ButtonWidget<?> createMoveButton(int index, int offset, String arrow, BooleanSupplier rowHovered) {
+        IKey arrowText = IKey.str(arrow)
+            .color(EditorWidgets.DETAIL_COLOR);
+
         return new ButtonWidget<>().width(MOVE_BUTTON_WIDTH)
             .heightRel(1f)
-            .overlay(IKey.str(arrow))
+            .background(IDrawable.EMPTY)
+            .hoverBackground(
+                (context, x, y, width, height, widgetTheme) -> GuiDraw.drawRect(x, y, width, height, ROW_CONTROL_HOVER))
+            .overlay((context, x, y, width, height, widgetTheme) -> {
+                if (rowHovered.getAsBoolean()) {
+                    arrowText.drawAtZero(context, width, height, widgetTheme);
+                }
+            })
             .tooltip(
                 tooltip -> tooltip
                     .addLine(I18n.format(offset < 0 ? "radialmenu.manager.move_up" : "radialmenu.manager.move_down")))
@@ -581,8 +612,13 @@ public final class MenuManager {
             float iconX = x + NUMBER_WIDTH;
             int textX = Math.round(iconX + ICON_SIZE + EditorWidgets.TEXT_INSET);
 
-            GuiDraw
-                .drawText((index + 1) + ".", x + EditorWidgets.TEXT_INSET, textY, 1f, EditorWidgets.TEXT_COLOR, true);
+            GuiDraw.drawText(
+                (index + 1) + ".",
+                x + EditorWidgets.TEXT_INSET,
+                textY,
+                1f,
+                EditorWidgets.DETAIL_COLOR,
+                EditorWidgets.TEXT_SHADOW);
             if (icon != null) {
                 icon.draw(iconX + (ICON_SIZE / 2f), y + (height / 2f), ICON_SIZE);
             }
@@ -593,7 +629,7 @@ public final class MenuManager {
                 textY,
                 1f,
                 section.isEmpty() ? EditorWidgets.DETAIL_COLOR : EditorWidgets.TEXT_COLOR,
-                true);
+                EditorWidgets.TEXT_SHADOW);
         };
     }
 

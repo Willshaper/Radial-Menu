@@ -39,7 +39,7 @@ final class SearchListDialog<T> extends Dialog<T> {
     private static final int ROW_HEIGHT = 14;
     private static final int HEADER_HEIGHT = 13;
     private static final int DETAIL_GAP = 8;
-    private static final int HEADER_COLOR = 0xFFFFD040;
+    private static final int HEADER_COLOR = 0xFF6EA0F0;
 
     private final StringValue search = new StringValue("");
 
@@ -78,11 +78,7 @@ final class SearchListDialog<T> extends Dialog<T> {
             Flow.column()
                 .sizeRel(1f)
                 .childPadding(3)
-                .child(
-                    IKey.str(title)
-                        .asWidget()
-                        .widthRel(1f)
-                        .height(10))
+                .child(EditorWidgets.titleBar(IKey.str(title), this::closeIfOpen))
                 .child(
                     new TextFieldWidget().value(search)
                         .autoUpdateOnChange(true)
@@ -136,7 +132,7 @@ final class SearchListDialog<T> extends Dialog<T> {
                     textY,
                     1f,
                     EditorWidgets.TEXT_COLOR,
-                    true);
+                    EditorWidgets.TEXT_SHADOW);
                 if (!detail.isEmpty()) {
                     GuiDraw.drawText(
                         detail,
@@ -144,7 +140,7 @@ final class SearchListDialog<T> extends Dialog<T> {
                         textY,
                         1f,
                         EditorWidgets.DETAIL_COLOR,
-                        true);
+                        EditorWidgets.TEXT_SHADOW);
                 }
             })
             .setEnabledIf(button -> matchesSearch(searchText))

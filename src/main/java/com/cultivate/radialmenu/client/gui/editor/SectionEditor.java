@@ -143,10 +143,9 @@ public final class SectionEditor {
                 .childPadding(4)
                 .collapseDisabledChild()
                 .child(
-                    IKey.str(I18n.format("radialmenu.editor.section_title", index + 1, menu.getName()))
-                        .asWidget()
-                        .widthRel(1f)
-                        .height(12))
+                    EditorWidgets.titleBar(
+                        IKey.str(I18n.format("radialmenu.editor.section_title", index + 1, menu.getName())),
+                        this::finish))
                 .child(
                     EditorWidgets.labeledRow(
                         "radialmenu.editor.name",

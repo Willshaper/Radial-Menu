@@ -8,7 +8,6 @@ import javax.annotation.Nullable;
 import net.minecraft.item.ItemStack;
 
 import com.cleanroommc.modularui.api.widget.Interactable;
-import com.cleanroommc.modularui.drawable.GuiTextures;
 import com.cleanroommc.modularui.integration.recipeviewer.RecipeViewerGhostIngredientSlot;
 import com.cleanroommc.modularui.screen.viewport.ModularGuiContext;
 import com.cleanroommc.modularui.theme.WidgetThemeEntry;
@@ -42,7 +41,7 @@ final class IconSlot extends Widget<IconSlot> implements RecipeViewerGhostIngred
         this.onItemDropped = onItemDropped;
         this.onClear = onClear;
         size(SIZE);
-        background(GuiTextures.SLOT_ITEM);
+        background(EditorWidgets.wellBackground());
         tooltipDynamic(tooltip -> {
             if ((icon.get() instanceof ItemIcon itemIcon) && (itemIcon.getStack() != null)) {
                 tooltip.addFromItem(itemIcon.getStack());

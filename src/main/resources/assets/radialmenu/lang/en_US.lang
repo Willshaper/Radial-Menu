@@ -48,6 +48,7 @@ radialmenu.editor.clear=Clear
 radialmenu.editor.clear_confirm=Click again
 radialmenu.editor.cancel=Cancel
 
+radialmenu.manager.title=Menu manager
 radialmenu.manager.menus=Menus
 radialmenu.manager.new=New
 radialmenu.manager.delete=Delete Menu

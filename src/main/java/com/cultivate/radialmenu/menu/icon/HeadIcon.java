@@ -1,5 +1,7 @@
 package com.cultivate.radialmenu.menu.icon;
 
+import java.io.File;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -28,10 +30,11 @@ import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
  * A player's face, from their skin.
  *
  * <p>
- * If the player is in the world, their loaded skin is used. Otherwise the skin is looked up by name once, in the
- * background, through the same Mojang services the game uses for skins, and kept until {@link #reloadAll()}. Until
- * then, and for names Mojang doesn't know (such as players on offline-mode servers who aren't nearby), Steve's face is
- * drawn.
+ * If the player is in the world, their loaded skin is used. Otherwise the skin is looked up by name in the
+ * background, through the same Mojang services the game uses for skins. The skin's address is kept in
+ * {@link HeadCache}, so on later launches the head shows at once from the game's own skin cache, and is only looked up
+ * again once a day to catch skin changes. Until a skin is known, and for names Mojang doesn't know (such as players on
+ * offline-mode servers who aren't nearby), Steve's face is drawn.
  */
 public class HeadIcon implements SectionIcon {
 
@@ -44,6 +47,7 @@ public class HeadIcon implements SectionIcon {
     private static final int HAT_X = 40;
     private static final int WHITE = 0xFFFFFF;
 
+    // Loaded skins by lowercase player name, for this session.
     private static final Map<String, ResourceLocation> SKINS = new ConcurrentHashMap<>();
     private static final Set<String> REQUESTED = ConcurrentHashMap.newKeySet();
     private static final ExecutorService LOOKUPS = Executors.newSingleThreadExecutor(runnable -> {
@@ -52,6 +56,9 @@ public class HeadIcon implements SectionIcon {
         thread.setDaemon(true);
         return thread;
     });
+
+    @Nullable
+    private static HeadCache cache;
 
     private final String playerName;
 
@@ -64,11 +71,21 @@ public class HeadIcon implements SectionIcon {
     }
 
     /**
-     * Forgets every looked-up skin, so the next draw looks them up again.
+     * Sets the file skin addresses are kept in. Called once while the mod loads.
+     */
+    public static void setCacheFile(File file) {
+        cache = new HeadCache(file);
+    }
+
+    /**
+     * Looks every head up again, showing the known skins meanwhile.
      */
     public static void reloadAll() {
         SKINS.clear();
         REQUESTED.clear();
+        if (cache != null) {
+            cache.markAllStale();
+        }
     }
 
     @Override
@@ -99,19 +116,45 @@ public class HeadIcon implements SectionIcon {
         if (loaded instanceof AbstractClientPlayer player) {
             return player.getLocationSkin();
         }
+        if (name.isEmpty()) {
+            return SkinManager.field_152793_a;
+        }
+        if (REQUESTED.add(key)) {
+            requestSkin(name, key);
+        }
         skin = SKINS.get(key);
-        if (skin != null) {
-            return skin;
-        }
-        if (!name.isEmpty() && REQUESTED.add(key)) {
-            LOOKUPS.execute(() -> lookUpSkin(name, key));
-        }
-        return SkinManager.field_152793_a;
+        return skin == null ? SkinManager.field_152793_a : skin;
     }
 
     /**
-     * Finds the player's profile by name, then their skin, then loads the skin on the client thread. Runs in the
-     * background; a name that can't be found keeps Steve's face.
+     * Loads the cached skin right away if there is one, and looks the player up in the background if there is none or
+     * it is due for a check.
+     */
+    private static void requestSkin(String name, String key) {
+        HeadCache.Entry cached = cache == null ? null : cache.get(name);
+
+        if (cached != null) {
+            loadSkin(key, new MinecraftProfileTexture(cached.skinUrl, Collections.emptyMap()));
+        }
+        if ((cached == null) || cached.isStale(System.currentTimeMillis())) {
+            LOOKUPS.execute(() -> lookUpSkin(name, key));
+        }
+    }
+
+    /**
+     * Loads a skin through the game, which reads it from its own cache or downloads it. Must run on the client thread.
+     */
+    private static void loadSkin(String key, MinecraftProfileTexture skin) {
+        SKINS.put(
+            key,
+            Minecraft.getMinecraft()
+                .func_152342_ad()
+                .func_152792_a(skin, MinecraftProfileTexture.Type.SKIN));
+    }
+
+    /**
+     * Finds the player's profile by name, then their skin, then loads and caches the skin on the client thread. Runs in
+     * the background; a name that can't be found keeps the skin it had, or Steve's face.
      */
     private static void lookUpSkin(String name, String key) {
         Minecraft mc = Minecraft.getMinecraft();
@@ -131,11 +174,12 @@ public class HeadIcon implements SectionIcon {
             return;
         }
         if (skin != null) {
-            mc.func_152344_a(
-                () -> SKINS.put(
-                    key,
-                    mc.func_152342_ad()
-                        .func_152792_a(skin, MinecraftProfileTexture.Type.SKIN)));
+            mc.func_152344_a(() -> {
+                loadSkin(key, skin);
+                if (cache != null) {
+                    cache.put(name, skin.getUrl(), System.currentTimeMillis());
+                }
+            });
         }
     }
 

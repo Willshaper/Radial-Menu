@@ -1,0 +1,35 @@
+{
+  "parent": "DEFAULT",
+  "color": "0xFFFFFFFF",
+  "textColor": "0xFFE6E7EA",
+  "textShadow": false,
+  "panel": {
+    "background": [
+      { "type": "rectangle", "color": "0xFF1B1C1F" },
+      { "type": "rectangle", "color": "0xFF34373D", "hollow": true }
+    ]
+  },
+  "button": {
+    "background": [
+      { "type": "rectangle", "color": "0xFF2A2C31" },
+      { "type": "rectangle", "color": "0xFF3A3D44", "hollow": true }
+    ]
+  },
+  "button:hover": {
+    "background": [
+      { "type": "rectangle", "color": "0xFF33363C" },
+      { "type": "rectangle", "color": "0xFF4A86E8", "hollow": true }
+    ]
+  },
+  "textField": {
+    "background": [
+      { "type": "rectangle", "color": "0xFF141518" },
+      { "type": "rectangle", "color": "0xFF33363C", "hollow": true }
+    ],
+    "markedColor": "0xFF3C6FD0",
+    "hintColor": "0xFF6B6F78"
+  },
+  "scrollbar": {
+    "color": "0xFF4A4D55"
+  }
+}

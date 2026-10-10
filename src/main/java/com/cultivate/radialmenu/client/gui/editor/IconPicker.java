@@ -25,6 +25,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.Util;
 
 import com.cleanroommc.modularui.api.IPanelHandler;
@@ -109,7 +110,6 @@ final class IconPicker extends Dialog<SectionIcon> {
     private static final int SWATCH_WIDTH = 28;
     private static final int SWATCH_INSET = 3;
     private static final int BUTTON_WIDTH = 70;
-    private static final int TAB_ACCENT = 0xFF3C78D8;
     private static final int TAB_ACCENT_HEIGHT = 2;
     // Room for a few characters plus Angelica's color codes, such as &#FF8800TP.
     private static final int TEXT_ICON_MAX_LENGTH = 32;
@@ -171,11 +171,7 @@ final class IconPicker extends Dialog<SectionIcon> {
                 .sizeRel(1f)
                 .childPadding(3)
                 .collapseDisabledChild()
-                .child(
-                    IKey.lang("radialmenu.picker.title")
-                        .asWidget()
-                        .widthRel(1f)
-                        .height(10))
+                .child(EditorWidgets.titleBar(IKey.lang("radialmenu.picker.title"), this::closeIfOpen))
                 .child(buildTabRow())
                 .child(buildSearchRow())
                 .child(buildItemRow())
@@ -231,9 +227,14 @@ final class IconPicker extends Dialog<SectionIcon> {
                             y + ((height - EditorWidgets.FONT_HEIGHT) / 2f),
                             1f,
                             rowTab == tab ? EditorWidgets.TEXT_COLOR : EditorWidgets.DETAIL_COLOR,
-                            true);
+                            EditorWidgets.TEXT_SHADOW);
                         if (rowTab == tab) {
-                            GuiDraw.drawRect(x, y + height - TAB_ACCENT_HEIGHT, width, TAB_ACCENT_HEIGHT, TAB_ACCENT);
+                            GuiDraw.drawRect(
+                                x,
+                                y + height - TAB_ACCENT_HEIGHT,
+                                width,
+                                TAB_ACCENT_HEIGHT,
+                                EditorWidgets.ACCENT_COLOR);
                         }
                     })
                     .onMousePressed(mouseButton -> {
@@ -496,7 +497,7 @@ final class IconPicker extends Dialog<SectionIcon> {
 
         try {
             creativeTabs = item.getCreativeTabs();
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
             creativeTabs = null;
         }
         if ((creativeTabs == null) || (creativeTabs.length == 0)) {
@@ -524,7 +525,7 @@ final class IconPicker extends Dialog<SectionIcon> {
     private static String getDisplayName(ItemStack stack, String fallback) {
         try {
             return stack.getDisplayName();
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
             return fallback;
         }
     }
@@ -579,12 +580,12 @@ final class IconPicker extends Dialog<SectionIcon> {
 
         if (mc.thePlayer != null) {
             for (Object info : mc.thePlayer.sendQueue.playerInfoList) {
-                names.add(((GuiPlayerInfo) info).name);
+                addPlayerName(names, ((GuiPlayerInfo) info).name);
             }
         }
         if (mc.theWorld != null) {
             for (Object player : mc.theWorld.playerEntities) {
-                names.add(((EntityPlayer) player).getCommandSenderName());
+                addPlayerName(names, ((EntityPlayer) player).getCommandSenderName());
             }
         }
         if (PLAYER_NAME.matcher(typed)
@@ -595,6 +596,19 @@ final class IconPicker extends Dialog<SectionIcon> {
             choices.add(createHeadChoice(name));
         }
         return choices;
+    }
+
+    /**
+     * Adds a name from the tab list or the world. Servers can put color codes or ranks into tab list names, so the
+     * codes are removed, and what isn't a valid account name is left out since no skin could be found for it.
+     */
+    private static void addPlayerName(Set<String> names, @Nullable String listed) {
+        String name = listed == null ? "" : EnumChatFormatting.getTextWithoutFormattingCodes(listed);
+
+        if (PLAYER_NAME.matcher(name)
+            .matches()) {
+            names.add(name);
+        }
     }
 
     private static Choice createHeadChoice(String name) {
@@ -619,7 +633,7 @@ final class IconPicker extends Dialog<SectionIcon> {
 
         private static final int CELL = 20;
         private static final int ICON_SIZE = 16;
-        private static final int HOVER_FILL = 0x603C78D8;
+        private static final int HOVER_FILL = 0xFF2C3A57;
         private static final int TEXT_INSET = 4;
 
         private final List<Choice> shown = new ArrayList<>();
@@ -722,7 +736,8 @@ final class IconPicker extends Dialog<SectionIcon> {
 
             hovered = null;
             for (Object line : font.listFormattedStringToWidth(getEmptyText(), getArea().width - (2 * TEXT_INSET))) {
-                GuiDraw.drawText((String) line, TEXT_INSET, y, 1f, EditorWidgets.DETAIL_COLOR, true);
+                GuiDraw
+                    .drawText((String) line, TEXT_INSET, y, 1f, EditorWidgets.DETAIL_COLOR, EditorWidgets.TEXT_SHADOW);
                 y += EditorWidgets.FONT_HEIGHT + 2;
             }
         }

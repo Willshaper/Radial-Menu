@@ -19,6 +19,7 @@ public final class RadialMenuClient {
 
     private static final String MENU_FILE = RadialMenuMod.MODID + "/menus.json";
     private static final String ICON_DIRECTORY = RadialMenuMod.MODID + "/icons";
+    private static final String HEAD_CACHE_FILE = RadialMenuMod.MODID + "/heads.json";
 
     private static MenuStore menuStore;
     private static boolean menusLoaded;
@@ -28,6 +29,7 @@ public final class RadialMenuClient {
     public static void preInit(File configDirectory) {
         menuStore = new MenuStore(new File(configDirectory, MENU_FILE));
         ImageIcon.setDirectory(new File(configDirectory, ICON_DIRECTORY));
+        HeadIcon.setCacheFile(new File(configDirectory, HEAD_CACHE_FILE));
     }
 
     public static void init() {

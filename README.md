@@ -35,7 +35,7 @@ All three keys are under *Radial Menu* in Controls.
 
 Each section has a name, an icon and an action.
 
-- **Icons**: *Choose* opens the icon picker, with a tab per type, a search box and a grid. Dragging an item from NEI
+- **Icons**: the button next to the icon slot opens the icon picker, with a tab per type, a search box and a grid. Dragging an item from NEI
   onto the editor's icon slot also works, and right clicking the slot or clicking × removes the icon.
   - *Items*: every item in the game and its variants, searchable by name or id. Drag one in from NEI or use *Held
     Item* instead if that's quicker.
@@ -45,7 +45,9 @@ Each section has a name, an icon and an action.
   - *Images*: PNGs of your own, up to 512 × 512 pixels, from `config/radialmenu/icons` (*Open Folder* opens it).
   - *Heads*: a player's face. The tab lists the players on the server; type any other name in the search box. If
     the player is nearby their skin is used, otherwise it's looked up by name from Mojang, the same way the game loads
-    skins. Names Mojang doesn't know show Steve.
+    skins. Names Mojang doesn't know show Steve. Looked-up skins are remembered in `config/radialmenu/heads.json`,
+    so heads show straight away on the next launch; each is checked again at most once a day to pick up skin
+    changes, and `/radialmenu reload` checks them all again.
   - *Text*: a short piece of colored text. With Angelica 2.2.19 or newer, text icons and section names can use its
     color codes, such as `&#FF8800TP` or `&q` for rainbow text.
 - **Actions**:
@@ -100,6 +102,9 @@ Ring size, center size, colors, the open animation, labels, whether the last use
 Select* and *Inline Submenus* are also in the mod's config screen (Mods → Radial Menu → Config) or
 `config/radialmenu.cfg`. Colors there are written like
 `#3C78D8` (the `#` is optional, and `#38D` works too), with a separate opacity from 0 to 100%.
+
+The editor screens use a dark ModularUI theme, `assets/radialmenu/themes/dark.json` in the jar. A resource pack can
+replace that file to restyle them.
 
 ## Building
 
