@@ -3,7 +3,9 @@ package com.cultivate.radialmenu.client.gui;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -34,12 +36,13 @@ import com.cultivate.radialmenu.menu.action.SubmenuAction;
  * <ul>
  * <li>Left click a section: run it, or step into it if it is a submenu. Clicking an empty section edits it.</li>
  * <li>Shift + left click a section: edit it. Shift + left click the center: open the menu manager.</li>
- * <li>Right click, or left click the center: fold away the inline ring if one is shown, otherwise go back from a
- * submenu.</li>
+ * <li>Right click, or left click the center: fold away the outermost inline ring if one is shown, otherwise go back
+ * from a submenu.</li>
  * <li>Switch key or scroll wheel: change to the next or previous menu.</li>
  * <li>With Release to Select on, letting go of the open key also runs the section under the mouse.</li>
- * <li>With Inline Submenus on, resting the mouse on a submenu section shows that submenu as a second ring outside the
- * first. Its sections work like any other.</li>
+ * <li>With Inline Submenus on, submenus never replace the menu. Resting the mouse on a submenu section, or clicking it,
+ * shows the submenu as a ring outside the ring the section is in, up to {@link RadialLayout#MAX_INLINE_RINGS} rings
+ * deep. Their sections work like any other.</li>
  * </ul>
  */
 public class RadialScreen extends CustomModularScreen {
@@ -49,26 +52,63 @@ public class RadialScreen extends CustomModularScreen {
     private static final int RIGHT_BUTTON = 1;
     private static final long OPEN_ANIMATION_NANOS = 150_000_000L;
     private static final float CLOSED_SCALE = 0.5f;
-    // How long the mouse has to rest on a section before the inline ring changes to match it.
+    // How long the mouse has to rest on a section before the inline rings change to match it.
     private static final long INLINE_DELAY_NANOS = 200_000_000L;
 
     // Menus above the current one, the root first. Empty when not in a submenu.
     private final Deque<RadialMenu> parentMenus = new ArrayDeque<>();
+    // Submenus shown as inline rings, innermost first.
+    private final List<InlineRing> inlineRings = new ArrayList<>();
     private RadialMenu menu;
+    // How many inline rings the layout keeps room for, so the rings don't move as inline rings open and close.
+    private int inlineRoom;
     private long openedAtNanos;
     private boolean lastMenuChanged;
-    // The submenu shown as the inline ring, and the section of the current menu it belongs to.
+    // The section the mouse is resting on, and since when, for the inline rings' delay.
     @Nullable
-    private RadialMenu inlineMenu;
-    private int inlineParent = RadialLayout.NONE;
-    // The section the mouse is resting on, and since when, for the inline ring's delay.
-    private int restingSection = RadialLayout.NONE;
+    private Target restingOn;
     private long restingSinceNanos;
+
+    /**
+     * A section of one of the rings: {@code level} 0 is the main ring, 1 the first inline ring, and so on.
+     */
+    static final class Target {
+
+        final int level;
+        final int index;
+
+        Target(int level, int index) {
+            this.level = level;
+            this.index = index;
+        }
+
+        boolean isSection() {
+            return index >= 0;
+        }
+
+        boolean sameAs(@Nullable Target other) {
+            return (other != null) && (other.level == level) && (other.index == index);
+        }
+    }
+
+    /**
+     * A submenu shown as an inline ring, and the section of the ring inside it that opened it.
+     */
+    private static final class InlineRing {
+
+        private final RadialMenu menu;
+        private final int parentIndex;
+
+        private InlineRing(RadialMenu menu, int parentIndex) {
+            this.menu = menu;
+            this.parentIndex = parentIndex;
+        }
+    }
 
     private RadialScreen(RadialMenu menu) {
         super(RadialMenuMod.MODID);
-        this.menu = menu;
         drawDarkBackground(false);
+        setMenu(menu);
     }
 
     /**
@@ -119,7 +159,7 @@ public class RadialScreen extends CustomModularScreen {
     public void onFrameUpdate() {
         super.onFrameUpdate();
         if (RadialMenuConfig.inlineSubmenus) {
-            updateInlineRing();
+            updateInlineRings();
         }
     }
 
@@ -136,20 +176,30 @@ public class RadialScreen extends CustomModularScreen {
         return menu;
     }
 
-    @Nullable
-    RadialMenu getInlineMenu() {
-        return inlineMenu;
+    /**
+     * @return the menu shown in the ring at {@code level}: the current menu for 0, an inline ring's submenu above that
+     */
+    RadialMenu getMenuAt(int level) {
+        return level == 0 ? menu : inlineRings.get(level - 1).menu;
     }
 
-    int getInlineParent() {
-        return inlineParent;
+    int getInlineRingCount() {
+        return inlineRings.size();
     }
 
     /**
-     * @return true if right click or the center would do something: fold the inline ring or leave a submenu
+     * @return the section of the ring at {@code level} whose submenu is shown as the next ring out, or
+     *         {@link RadialLayout#NONE}
+     */
+    int getOpenSubmenuSection(int level) {
+        return level < inlineRings.size() ? inlineRings.get(level).parentIndex : RadialLayout.NONE;
+    }
+
+    /**
+     * @return true if right click or the center would do something: fold an inline ring or leave a submenu
      */
     boolean canGoBack() {
-        return (inlineMenu != null) || !parentMenus.isEmpty();
+        return !inlineRings.isEmpty() || !parentMenus.isEmpty();
     }
 
     /**
@@ -188,114 +238,164 @@ public class RadialScreen extends CustomModularScreen {
         return CLOSED_SCALE + ((1 - CLOSED_SCALE) * progress);
     }
 
-    RadialLayout createLayout(float scale) {
+    RadialLayout createLayout() {
         return new RadialLayout(
             getScreenArea().w(),
             getScreenArea().h(),
             menu.getSectionCount(),
-            scale,
-            RadialMenuConfig.inlineSubmenus);
+            getOpenScale(),
+            inlineRoom);
     }
 
     /**
-     * @return the section under the mouse, {@link RadialLayout#CENTER}, or {@link RadialLayout#NONE} while the mouse is
-     *         over the inline ring. Measured on the ring as it is drawn right now.
+     * @return the main ring followed by the inline rings, innermost first
      */
-    int getHoveredSection() {
-        if (getHoveredInlineSection() != RadialLayout.NONE) {
-            return RadialLayout.NONE;
+    List<RadialLayout.Ring> createRings(RadialLayout layout) {
+        List<RadialLayout.Ring> rings = new ArrayList<>();
+        RadialLayout.Ring ring = layout.mainRing();
+
+        rings.add(ring);
+        for (InlineRing inline : inlineRings) {
+            ring = layout.inlineRing(ring, inline.parentIndex, inline.menu.getSectionCount());
+            rings.add(ring);
         }
-        return createLayout(getOpenScale()).sectionAt(getContext().getAbsMouseX(), getContext().getAbsMouseY());
+        return rings;
     }
 
     /**
-     * @return the inline ring section under the mouse, or {@link RadialLayout#NONE}
+     * @return the section under the mouse, measured on the rings as they are drawn right now. Outer rings are checked
+     *         first. On the main ring the index can be {@link RadialLayout#CENTER}.
      */
-    int getHoveredInlineSection() {
-        if (inlineMenu == null) {
-            return RadialLayout.NONE;
+    Target getHovered() {
+        RadialLayout layout = createLayout();
+        List<RadialLayout.Ring> rings = createRings(layout);
+        float x = getContext().getAbsMouseX();
+        float y = getContext().getAbsMouseY();
+
+        for (int level = rings.size() - 1; level > 0; level--) {
+            int index = layout.indexAt(rings.get(level), x, y);
+
+            if (index != RadialLayout.NONE) {
+                return new Target(level, index);
+            }
         }
-        return createLayout(getOpenScale()).inlineSectionAt(
-            getContext().getAbsMouseX(),
-            getContext().getAbsMouseY(),
-            inlineParent,
-            inlineMenu.getSectionCount());
+        return new Target(0, layout.sectionAt(x, y));
+    }
+
+    private MenuSection getSection(Target target) {
+        return getMenuAt(target.level).getSection(target.index);
+    }
+
+    private void setMenu(RadialMenu newMenu) {
+        Set<RadialMenu> path = new HashSet<>(parentMenus);
+
+        menu = newMenu;
+        inlineRings.clear();
+        path.add(newMenu);
+        inlineRoom = RadialMenuConfig.inlineSubmenus ? submenuDepth(newMenu, path, RadialLayout.MAX_INLINE_RINGS) : 0;
     }
 
     /**
-     * Shows the submenu of the section the mouse has rested on, or hides the inline ring once the mouse rests on a
-     * section without one. Resting on the center or the inline ring changes nothing.
+     * @return how many inline rings deep the submenus of {@code from} go, counting at most {@code limit}
      */
-    private void updateInlineRing() {
-        int hovered = getHoveredSection();
+    private static int submenuDepth(RadialMenu from, Set<RadialMenu> path, int limit) {
+        int deepest = 0;
+
+        if (limit == 0) {
+            return 0;
+        }
+        for (int i = 0; i < from.getSectionCount(); i++) {
+            RadialMenu submenu = findMenu(from.getSection(i));
+
+            if ((submenu != null) && path.add(submenu)) {
+                deepest = Math.max(deepest, 1 + submenuDepth(submenu, path, limit - 1));
+                path.remove(submenu);
+            }
+        }
+        return deepest;
+    }
+
+    @Nullable
+    private static RadialMenu findMenu(MenuSection section) {
+        if (section.getAction() instanceof SubmenuAction submenuAction) {
+            return RadialMenuClient.getMenuStore()
+                .getMenu(submenuAction.getMenuId());
+        }
+        return null;
+    }
+
+    /**
+     * @return the menu the section at {@code level} opens, or null if it opens none or that menu is already shown
+     */
+    @Nullable
+    private RadialMenu findSubmenu(MenuSection section, int level) {
+        RadialMenu submenu = findMenu(section);
+
+        if ((submenu == null) || parentMenus.contains(submenu)) {
+            return null;
+        }
+        for (int i = 0; i <= level; i++) {
+            if (getMenuAt(i) == submenu) {
+                return null;
+            }
+        }
+        return submenu;
+    }
+
+    /**
+     * Follows the section the mouse has rested on: shows its submenu as the next ring out, or folds away the rings
+     * outside it if it has none. Resting on the center, or on the section whose ring is already shown, changes
+     * nothing.
+     */
+    private void updateInlineRings() {
+        Target hovered = getHovered();
         long now = System.nanoTime();
 
-        if ((hovered < 0) || (hovered == inlineParent)) {
-            restingSection = RadialLayout.NONE;
+        if (!hovered.isSection() || (getOpenSubmenuSection(hovered.level) == hovered.index)) {
+            restingOn = null;
             return;
         }
-        if (hovered != restingSection) {
-            restingSection = hovered;
+        if (!hovered.sameAs(restingOn)) {
+            restingOn = hovered;
             restingSinceNanos = now;
             return;
         }
         if ((now - restingSinceNanos) >= INLINE_DELAY_NANOS) {
             showInline(hovered);
-            restingSection = RadialLayout.NONE;
+            restingOn = null;
         }
-    }
-
-    private void showInline(int index) {
-        RadialMenu submenu = findSubmenu(menu.getSection(index));
-
-        if (submenu == null) {
-            hideInline();
-            return;
-        }
-        inlineMenu = submenu;
-        inlineParent = index;
-    }
-
-    private void hideInline() {
-        inlineMenu = null;
-        inlineParent = RadialLayout.NONE;
     }
 
     /**
-     * @return the menu the section opens, or null if it opens none or that menu is already on the path
+     * Folds away the rings outside the target's ring, then shows the target's submenu as the next ring if it has one
+     * and there is room.
      */
-    @Nullable
-    private RadialMenu findSubmenu(MenuSection section) {
-        RadialMenu submenu;
+    private void showInline(Target target) {
+        RadialMenu submenu = findSubmenu(getSection(target), target.level);
 
-        if (!(section.getAction() instanceof SubmenuAction submenuAction)) {
-            return null;
+        foldInlineRingsOutside(target.level);
+        if ((submenu != null) && (target.level < RadialLayout.MAX_INLINE_RINGS)) {
+            inlineRings.add(new InlineRing(submenu, target.index));
         }
-        submenu = RadialMenuClient.getMenuStore()
-            .getMenu(submenuAction.getMenuId());
-        if ((submenu == null) || (submenu == menu) || parentMenus.contains(submenu)) {
-            return null;
+    }
+
+    private void foldInlineRingsOutside(int level) {
+        while (inlineRings.size() > level) {
+            inlineRings.remove(inlineRings.size() - 1);
         }
-        return submenu;
     }
 
     /**
      * Runs the section under the mouse as the open key is let go, unless it is empty or opens a submenu.
      */
     private void runHoveredSection() {
-        int inlineHovered = getHoveredInlineSection();
-        int hovered = getHoveredSection();
+        Target hovered = getHovered();
         SectionAction action;
 
-        if ((inlineHovered != RadialLayout.NONE) && (inlineMenu != null)) {
-            action = inlineMenu.getSection(inlineHovered)
-                .getAction();
-        } else if (hovered >= 0) {
-            action = menu.getSection(hovered)
-                .getAction();
-        } else {
+        if (!hovered.isSection()) {
             return;
         }
+        action = getSection(hovered).getAction();
         if ((action != null) && !(action instanceof SubmenuAction)) {
             ClientTickHandler.scheduleAction(action);
         }
@@ -303,8 +403,7 @@ public class RadialScreen extends CustomModularScreen {
 
     @Override
     public boolean onMousePressed(int mouseButton) {
-        int inlineHovered = getHoveredInlineSection();
-        int hovered = getHoveredSection();
+        Target hovered = getHovered();
         boolean shift = Interactable.hasShiftDown();
 
         if (mouseButton == RIGHT_BUTTON) {
@@ -314,67 +413,57 @@ public class RadialScreen extends CustomModularScreen {
         if (mouseButton != LEFT_BUTTON) {
             return true;
         }
-        if ((inlineHovered != RadialLayout.NONE) && (inlineMenu != null)) {
-            clickSection(inlineMenu, inlineHovered, shift);
-        } else if (hovered == RadialLayout.CENTER) {
-            if (shift) {
-                MenuManager.open(menu);
-                close();
-            } else {
-                goBack();
-            }
+        if (hovered.isSection()) {
+            clickSection(hovered, shift);
+        } else if (shift) {
+            MenuManager.open(menu);
+            close();
         } else {
-            clickSection(menu, hovered, shift);
+            goBack();
         }
         return true;
     }
 
-    /**
-     * @param owner the menu the section is in: the current menu, or the inline ring's menu
-     */
-    private void clickSection(RadialMenu owner, int index, boolean shift) {
-        MenuSection section = owner.getSection(index);
+    private void clickSection(Target target, boolean shift) {
+        MenuSection section = getSection(target);
         SectionAction action = section.getAction();
 
         if (shift || (action == null)) {
-            SectionEditor.open(owner, index);
+            SectionEditor.open(getMenuAt(target.level), target.index);
             close();
             return;
         }
-        if (action instanceof SubmenuAction) {
-            if (owner != menu) {
-                // A submenu inside the inline ring opens from the inline ring's menu, which becomes the current one.
-                stepInto(owner);
-            }
-            enterSubmenu(section);
+        if (!(action instanceof SubmenuAction)) {
+            ClientTickHandler.scheduleAction(action);
+            close();
             return;
         }
-        ClientTickHandler.scheduleAction(action);
-        close();
+        if (!RadialMenuConfig.inlineSubmenus) {
+            enterSubmenu(section);
+        } else if (getOpenSubmenuSection(target.level) == target.index) {
+            foldInlineRingsOutside(target.level);
+        } else {
+            showInline(target);
+        }
     }
 
     private void enterSubmenu(MenuSection section) {
-        RadialMenu submenu = findSubmenu(section);
+        RadialMenu submenu = findSubmenu(section, 0);
 
         if (submenu != null) {
-            stepInto(submenu);
+            parentMenus.addLast(menu);
+            setMenu(submenu);
         }
     }
 
-    private void stepInto(RadialMenu submenu) {
-        parentMenus.addLast(menu);
-        menu = submenu;
-        hideInline();
-    }
-
     /**
-     * Folds away the inline ring if one is shown, otherwise goes back from a submenu.
+     * Folds away the outermost inline ring if one is shown, otherwise goes back from a submenu.
      */
     private void goBack() {
-        if (inlineMenu != null) {
-            hideInline();
+        if (!inlineRings.isEmpty()) {
+            foldInlineRingsOutside(inlineRings.size() - 1);
         } else if (!parentMenus.isEmpty()) {
-            menu = parentMenus.removeLast();
+            setMenu(parentMenus.removeLast());
         }
     }
 
@@ -411,13 +500,12 @@ public class RadialScreen extends CustomModularScreen {
         RadialMenu next = cycleMenus.get(Math.floorMod(index + offset, cycleMenus.size()));
 
         parentMenus.clear();
-        hideInline();
         if (next != menu) {
-            menu = next;
             RadialMenuClient.getMenuStore()
                 .setLastMenuId(next.getId());
             lastMenuChanged = true;
         }
+        setMenu(next);
     }
 
     private RadialMenu getRootMenu() {

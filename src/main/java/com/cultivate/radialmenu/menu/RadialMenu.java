@@ -89,6 +89,31 @@ public class RadialMenu {
     }
 
     /**
+     * Puts sections into the first empty slots, in order, raising the section count when they go past it.
+     *
+     * @return how many were added; the rest didn't fit because all {@link #MAX_SECTIONS} slots are taken
+     */
+    public int addSections(List<MenuSection> added) {
+        int slot = 0;
+        int count = 0;
+
+        for (MenuSection section : added) {
+            while ((slot < MAX_SECTIONS) && !getSection(slot).isEmpty()) {
+                slot++;
+            }
+            if (slot >= MAX_SECTIONS) {
+                break;
+            }
+            setSection(slot, section);
+            if (slot >= sectionCount) {
+                setSectionCount(slot + 1);
+            }
+            count++;
+        }
+        return count;
+    }
+
+    /**
      * @return the indexes of sections past the section count that still have something in them
      */
     public List<Integer> getHiddenSectionsWithContent() {

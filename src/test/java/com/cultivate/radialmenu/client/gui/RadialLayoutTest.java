@@ -16,8 +16,8 @@ class RadialLayoutTest {
     private static final float CENTER_Y = SCREEN_HEIGHT / 2;
     private static final double DELTA = 1e-9;
 
-    private static RadialLayout layout(int sections, boolean inline) {
-        return new RadialLayout(SCREEN_WIDTH, SCREEN_HEIGHT, sections, 1f, inline);
+    private static RadialLayout layout(int sections, int inlineRings) {
+        return new RadialLayout(SCREEN_WIDTH, SCREEN_HEIGHT, sections, 1f, inlineRings);
     }
 
     /**
@@ -36,7 +36,7 @@ class RadialLayoutTest {
 
     @Test
     void sectionZeroIsAtTheTopAndSectionsRunClockwise() {
-        RadialLayout layout = layout(4, false);
+        RadialLayout layout = layout(4, 0);
 
         assertEquals(0, sectionAt(layout, 0, 60));
         assertEquals(1, sectionAt(layout, Math.PI / 2, 60));
@@ -46,7 +46,7 @@ class RadialLayoutTest {
 
     @Test
     void sectionsAreCenteredOnTheirAngle() {
-        RadialLayout layout = layout(4, false);
+        RadialLayout layout = layout(4, 0);
 
         // Section 0 covers 45 degrees either side of straight up.
         assertEquals(0, sectionAt(layout, Math.toRadians(-44), 60));
@@ -57,7 +57,7 @@ class RadialLayoutTest {
 
     @Test
     void centerCircleSelectsTheCenter() {
-        RadialLayout layout = layout(8, false);
+        RadialLayout layout = layout(8, 0);
 
         assertEquals(RadialLayout.CENTER, layout.sectionAt(CENTER_X, CENTER_Y));
         assertEquals(RadialLayout.CENTER, sectionAt(layout, 1, layout.centerRadius - 1));
@@ -65,77 +65,101 @@ class RadialLayoutTest {
 
     @Test
     void pointsOutsideTheRingStillSelectByDirection() {
-        RadialLayout layout = layout(8, false);
+        RadialLayout layout = layout(8, 0);
 
         assertEquals(2, sectionAt(layout, Math.PI / 2, layout.outerRadius + 100));
     }
 
     @Test
-    void ringFitsOnTheScreenWithRoomForLabels() {
-        RadialLayout plain = layout(24, false);
-        RadialLayout inline = layout(24, true);
+    void mainRingSectionsAreCenteredOnMultiplesOfTheirWidth() {
+        RadialLayout.Ring ring = layout(8, 0).mainRing();
 
-        assertTrue(plain.extentRadius <= (SCREEN_HEIGHT / 2));
-        assertTrue(inline.extentRadius <= (SCREEN_HEIGHT / 2));
-        assertTrue(inline.inlineInnerRadius > inline.outerRadius);
-        assertEquals(inline.inlineOuterRadius, inline.extentRadius, DELTA);
+        assertEquals(0, ring.angleOf(0), DELTA);
+        assertEquals(3 * ring.sectionAngle, ring.angleOf(3), DELTA);
+    }
+
+    @Test
+    void ringFitsOnTheScreenWithRoomForLabels() {
+        float maxExtent = (SCREEN_HEIGHT / 2) - 16;
+        RadialLayout plain = layout(24, 0);
+        RadialLayout deep = layout(24, RadialLayout.MAX_INLINE_RINGS);
+        RadialLayout.Ring first = deep.inlineRing(deep.mainRing(), 0, 4);
+        RadialLayout.Ring last = deep.inlineRing(deep.inlineRing(first, 0, 4), 0, 4);
+
+        assertTrue(plain.extentRadius <= maxExtent);
+        assertTrue(deep.extentRadius <= (maxExtent + DELTA));
+        assertEquals(last.outerRadius, deep.extentRadius, 1e-3);
     }
 
     @Test
     void openAnimationScalesTheRing() {
-        RadialLayout full = new RadialLayout(SCREEN_WIDTH, SCREEN_HEIGHT, 8, 1f, false);
-        RadialLayout half = new RadialLayout(SCREEN_WIDTH, SCREEN_HEIGHT, 8, 0.5f, false);
+        RadialLayout full = new RadialLayout(SCREEN_WIDTH, SCREEN_HEIGHT, 8, 1f, 0);
+        RadialLayout half = new RadialLayout(SCREEN_WIDTH, SCREEN_HEIGHT, 8, 0.5f, 0);
 
         assertEquals(full.outerRadius / 2, half.outerRadius, 1e-3);
     }
 
-    @Test
-    void inlineRingIsCenteredOnItsParentSection() {
-        RadialLayout layout = layout(8, true);
-        float distance = layout.inlineMiddleRadius();
-        double parentAngle = layout.angleOf(2);
-        double sectionWidth = layout.inlineSectionAngle(3);
-        float[] middle = point(parentAngle, distance);
-        float[] first = point(parentAngle - sectionWidth, distance);
-        float[] last = point(parentAngle + sectionWidth, distance);
+    private static int indexAt(RadialLayout layout, RadialLayout.Ring ring, double angle, float distance) {
+        float[] point = point(angle, distance);
 
-        assertEquals(1, layout.inlineSectionAt(middle[0], middle[1], 2, 3));
-        assertEquals(0, layout.inlineSectionAt(first[0], first[1], 2, 3));
-        assertEquals(2, layout.inlineSectionAt(last[0], last[1], 2, 3));
+        return layout.indexAt(ring, point[0], point[1]);
     }
 
     @Test
-    void inlineRingIgnoresTheMainRingAndPointsBesideIt() {
-        RadialLayout layout = layout(8, true);
-        double parentAngle = layout.angleOf(0);
-        float[] onMainRing = point(parentAngle, layout.middleRadius());
-        float[] beside = point(parentAngle + Math.PI, layout.inlineMiddleRadius());
-        float[] farOut = point(parentAngle, layout.inlineOuterRadius + 50);
+    void inlineRingIsCenteredOnItsParentSection() {
+        RadialLayout layout = layout(8, 1);
+        RadialLayout.Ring main = layout.mainRing();
+        RadialLayout.Ring ring = layout.inlineRing(main, 2, 3);
 
-        assertEquals(RadialLayout.NONE, layout.inlineSectionAt(onMainRing[0], onMainRing[1], 0, 3));
-        assertEquals(RadialLayout.NONE, layout.inlineSectionAt(beside[0], beside[1], 0, 3));
-        assertEquals(1, layout.inlineSectionAt(farOut[0], farOut[1], 0, 3));
+        assertEquals(main.angleOf(2), ring.angleOf(1), DELTA);
+        for (int i = 0; i < 3; i++) {
+            assertEquals(i, indexAt(layout, ring, ring.angleOf(i), ring.middleRadius()));
+        }
+    }
+
+    @Test
+    void inlineRingIgnoresTheRingInsideItAndPointsBesideIt() {
+        RadialLayout layout = layout(8, 1);
+        RadialLayout.Ring main = layout.mainRing();
+        RadialLayout.Ring ring = layout.inlineRing(main, 0, 3);
+
+        assertEquals(RadialLayout.NONE, indexAt(layout, ring, 0, main.middleRadius()));
+        assertEquals(RadialLayout.NONE, indexAt(layout, ring, Math.PI, ring.middleRadius()));
+        assertEquals(1, indexAt(layout, ring, 0, ring.outerRadius + 50));
     }
 
     @Test
     void inlineRingWrapsPastStraightUp() {
-        RadialLayout layout = layout(8, true);
-        double sectionWidth = layout.inlineSectionAngle(2);
-        float[] left = point(-sectionWidth / 2, layout.inlineMiddleRadius());
-        float[] right = point(sectionWidth / 2, layout.inlineMiddleRadius());
+        RadialLayout layout = layout(8, 1);
+        RadialLayout.Ring ring = layout.inlineRing(layout.mainRing(), 0, 2);
 
-        // Centered on section 0, so the inline ring starts left of straight up.
-        assertEquals(0, layout.inlineSectionAt(left[0], left[1], 0, 2));
-        assertEquals(1, layout.inlineSectionAt(right[0], right[1], 0, 2));
+        // Centered on section 0, so the ring starts left of straight up.
+        assertEquals(0, indexAt(layout, ring, -ring.sectionAngle / 2, ring.middleRadius()));
+        assertEquals(1, indexAt(layout, ring, ring.sectionAngle / 2, ring.middleRadius()));
     }
 
     @Test
     void inlineSectionsMatchTheMainSectionWidthButNeverGoAllTheWayRound() {
-        RadialLayout layout = layout(8, true);
-        double mainWidth = layout.sectionAngle * layout.middleRadius();
+        RadialLayout layout = layout(8, 1);
+        RadialLayout.Ring main = layout.mainRing();
+        RadialLayout.Ring three = layout.inlineRing(main, 0, 3);
+        RadialLayout.Ring many = layout.inlineRing(main, 0, 24);
 
-        assertEquals(mainWidth, layout.inlineSectionAngle(3) * layout.inlineMiddleRadius(), 1e-3);
-        assertTrue((24 * layout.inlineSectionAngle(24)) <= (RadialLayout.FULL_CIRCLE + DELTA));
+        assertEquals(main.sectionAngle * main.middleRadius(), three.sectionAngle * three.middleRadius(), 1e-3);
+        assertTrue((24 * many.sectionAngle) <= (RadialLayout.FULL_CIRCLE + DELTA));
+    }
+
+    @Test
+    void nestedInlineRingsSitFurtherOutAndFollowTheirParent() {
+        RadialLayout layout = layout(8, 2);
+        RadialLayout.Ring first = layout.inlineRing(layout.mainRing(), 1, 5);
+        RadialLayout.Ring second = layout.inlineRing(first, 4, 3);
+
+        assertEquals(2, second.level);
+        assertTrue(second.innerRadius > first.outerRadius);
+        assertEquals(first.angleOf(4), second.angleOf(1), DELTA);
+        assertEquals(RadialLayout.NONE, indexAt(layout, second, first.angleOf(4), first.middleRadius()));
+        assertEquals(1, indexAt(layout, second, first.angleOf(4), second.middleRadius()));
     }
 
     @Test

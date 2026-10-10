@@ -1,5 +1,7 @@
 package com.cultivate.radialmenu.client.gui;
 
+import java.util.List;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.Tessellator;
@@ -24,7 +26,7 @@ import com.cultivate.radialmenu.menu.icon.SectionIcon;
 import com.cultivate.radialmenu.menu.icon.TextIcon;
 
 /**
- * Draws the ring, icons and labels of a {@link RadialScreen}. Input is handled by the screen.
+ * Draws the rings, icons and labels of a {@link RadialScreen}. Input is handled by the screen.
  *
  * <p>
  * Everything is drawn through the Tessellator and plain GL state calls, which Angelica handles like vanilla GUI
@@ -61,106 +63,84 @@ final class RadialWidget extends Widget<RadialWidget> {
 
     @Override
     public void draw(ModularGuiContext context, WidgetThemeEntry<?> widgetTheme) {
-        RadialLayout layout = screen.createLayout(screen.getOpenScale());
-        int hovered = screen.getHoveredSection();
-        int inlineHovered = screen.getHoveredInlineSection();
+        RadialLayout layout = screen.createLayout();
+        List<RadialLayout.Ring> rings = screen.createRings(layout);
+        RadialScreen.Target hovered = screen.getHovered();
         boolean editing = Interactable.hasShiftDown();
-        RadialMenu inlineMenu = screen.getInlineMenu();
 
-        drawRing(layout, hovered, editing);
-        drawIcons(layout, hovered);
-        if (inlineMenu != null) {
-            drawInlineRing(layout, inlineMenu, inlineHovered, editing);
+        for (RadialLayout.Ring ring : rings) {
+            drawSections(layout, ring, hovered, editing);
         }
-        drawLabels(layout, hovered, inlineHovered, editing);
+        drawCenter(layout, hovered);
+        drawLabels(layout, hovered, editing);
     }
 
-    private void drawRing(RadialLayout layout, int hovered, boolean editing) {
-        RadialMenu menu = screen.getMenu();
-        int sectionColor = RingColor.SECTION.getArgb();
-        int hoverColor = RingColor.HOVER.getArgb();
-        double gapAngle = SECTION_GAP / layout.middleRadius();
+    /**
+     * Draws one ring's sections and their icons. The hovered section gets the hover color and a rim; the section
+     * whose submenu is shown as the next ring out gets a fainter hover color.
+     */
+    private void drawSections(RadialLayout layout, RadialLayout.Ring ring, RadialScreen.Target hovered,
+        boolean editing) {
+        RadialMenu menu = screen.getMenuAt(ring.level);
+        int hoveredIndex = hovered.level == ring.level ? hovered.index : RadialLayout.NONE;
+        int openSection = screen.getOpenSubmenuSection(ring.level);
+        double gapAngle = SECTION_GAP / ring.middleRadius();
+        float iconSize = layout.iconSize(ring);
 
         Platform.setupDrawColor();
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        for (int i = 0; i < layout.sectionCount; i++) {
-            double start = (layout.angleOf(i) - (layout.sectionAngle / 2)) + (gapAngle / 2);
-            double end = (layout.angleOf(i) + (layout.sectionAngle / 2)) - (gapAngle / 2);
-            int color = (i == hovered) ? hoverColor : sectionColor;
+        for (int i = 0; i < ring.count; i++) {
+            double start = (ring.angleOf(i) - (ring.sectionAngle / 2)) + (gapAngle / 2);
+            double end = (ring.angleOf(i) + (ring.sectionAngle / 2)) - (gapAngle / 2);
+            int color = (i == hoveredIndex) ? RingColor.HOVER.getArgb() : RingColor.SECTION.getArgb();
 
-            if ((i != hovered) && (i == screen.getInlineParent())) {
-                // Marks which section the inline ring belongs to.
-                color = halveAlpha(hoverColor);
+            if ((i != hoveredIndex) && (i == openSection)) {
+                color = halveAlpha(RingColor.HOVER.getArgb());
             } else if (menu.getSection(i)
                 .isEmpty()) {
                     color = halveAlpha(color);
                 }
-            drawArc(layout, start, end, layout.innerRadius, layout.outerRadius, color);
-            if (i == hovered) {
-                drawHoverRim(layout, start, end, layout.outerRadius, editing);
-            }
-        }
-        if (layout.centerRadius > 0) {
-            boolean centerActive = (hovered == RadialLayout.CENTER) && screen.canGoBack();
-
-            drawArc(
-                layout,
-                0,
-                RadialLayout.FULL_CIRCLE,
-                0,
-                layout.centerRadius,
-                centerActive ? hoverColor : RingColor.CENTER.getArgb());
-        }
-        Platform.endDrawColor();
-    }
-
-    private static void drawHoverRim(RadialLayout layout, double start, double end, float radius, boolean editing) {
-        drawArc(
-            layout,
-            start,
-            end,
-            radius,
-            radius + HOVER_RIM_WIDTH,
-            (editing ? EDIT_COLOR : RingColor.HOVER.getArgb()) | 0xFF000000);
-    }
-
-    /**
-     * Draws the inline ring: the sections of a submenu, in an arc outside the main ring centered on the section that
-     * opens it.
-     */
-    private void drawInlineRing(RadialLayout layout, RadialMenu inlineMenu, int hovered, boolean editing) {
-        int count = inlineMenu.getSectionCount();
-        double sectionAngle = layout.inlineSectionAngle(count);
-        double startAngle = layout.inlineStartAngle(screen.getInlineParent(), count);
-        float middleRadius = layout.inlineMiddleRadius();
-        double gapAngle = SECTION_GAP / middleRadius;
-        float iconSize = layout.inlineIconSize(count);
-
-        Platform.setupDrawColor();
-        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
-        for (int i = 0; i < count; i++) {
-            double start = startAngle + (i * sectionAngle) + (gapAngle / 2);
-            double end = (startAngle + ((i + 1) * sectionAngle)) - (gapAngle / 2);
-            int color = (i == hovered) ? RingColor.HOVER.getArgb() : RingColor.SECTION.getArgb();
-
-            if (inlineMenu.getSection(i)
-                .isEmpty()) {
-                color = halveAlpha(color);
-            }
-            drawArc(layout, start, end, layout.inlineInnerRadius, layout.inlineOuterRadius, color);
-            if (i == hovered) {
-                drawHoverRim(layout, start, end, layout.inlineOuterRadius, editing);
+            drawArc(layout, start, end, ring.innerRadius, ring.outerRadius, color);
+            if (i == hoveredIndex) {
+                drawArc(
+                    layout,
+                    start,
+                    end,
+                    ring.outerRadius,
+                    ring.outerRadius + HOVER_RIM_WIDTH,
+                    (editing ? EDIT_COLOR : RingColor.HOVER.getArgb()) | 0xFF000000);
             }
         }
         Platform.endDrawColor();
-        for (int i = 0; i < count; i++) {
-            double angle = startAngle + ((i + 0.5) * sectionAngle);
+        for (int i = 0; i < ring.count; i++) {
+            double angle = ring.angleOf(i);
 
             drawSectionIcon(
-                inlineMenu.getSection(i),
-                layout.xAt(angle, middleRadius),
-                layout.yAt(angle, middleRadius),
-                (i == hovered) ? iconSize * HOVER_ICON_GROWTH : iconSize);
+                menu.getSection(i),
+                layout.xAt(angle, ring.middleRadius()),
+                layout.yAt(angle, ring.middleRadius()),
+                (i == hoveredIndex) ? iconSize * HOVER_ICON_GROWTH : iconSize);
+        }
+    }
+
+    private void drawCenter(RadialLayout layout, RadialScreen.Target hovered) {
+        boolean centerActive = (hovered.index == RadialLayout.CENTER) && screen.canGoBack();
+
+        if (layout.centerRadius <= 0) {
+            return;
+        }
+        Platform.setupDrawColor();
+        GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+        drawArc(
+            layout,
+            0,
+            RadialLayout.FULL_CIRCLE,
+            0,
+            layout.centerRadius,
+            centerActive ? RingColor.HOVER.getArgb() : RingColor.CENTER.getArgb());
+        Platform.endDrawColor();
+        if (screen.canGoBack()) {
+            TextIcon.drawCenteredText(BACK_MARK, TEXT_COLOR, layout.centerX, layout.centerY, layout.centerRadius);
         }
     }
 
@@ -189,24 +169,6 @@ final class RadialWidget extends Widget<RadialWidget> {
         return (((argb >>> 24) / 2) << 24) | (argb & 0xFFFFFF);
     }
 
-    private void drawIcons(RadialLayout layout, int hovered) {
-        RadialMenu menu = screen.getMenu();
-        float radius = layout.middleRadius();
-
-        for (int i = 0; i < layout.sectionCount; i++) {
-            MenuSection section = menu.getSection(i);
-            double angle = layout.angleOf(i);
-            float x = layout.xAt(angle, radius);
-            float y = layout.yAt(angle, radius);
-            float size = (i == hovered) ? layout.iconSize * HOVER_ICON_GROWTH : layout.iconSize;
-
-            drawSectionIcon(section, x, y, size);
-        }
-        if (screen.canGoBack() && (layout.centerRadius > 0)) {
-            TextIcon.drawCenteredText(BACK_MARK, TEXT_COLOR, layout.centerX, layout.centerY, layout.centerRadius);
-        }
-    }
-
     private static void drawSectionIcon(MenuSection section, float x, float y, float size) {
         SectionIcon icon = section.getIcon();
 
@@ -229,35 +191,31 @@ final class RadialWidget extends Widget<RadialWidget> {
     }
 
     /**
-     * Draws the menu name above the ring and a line about the hovered section below it. While Shift is held the line
-     * below always says what a click will edit, even with labels turned off.
+     * Draws the menu name above the rings and a line about the hovered section below them. While Shift is held the
+     * line below always says what a click will edit, even with labels turned off.
      */
-    private void drawLabels(RadialLayout layout, int hovered, int inlineHovered, boolean editing) {
+    private void drawLabels(RadialLayout layout, RadialScreen.Target hovered, boolean editing) {
         float titleY = layout.centerY - layout.extentRadius - HOVER_RIM_WIDTH - LABEL_GAP - FONT_HEIGHT;
         float hintY = layout.centerY + layout.extentRadius + HOVER_RIM_WIDTH + LABEL_GAP;
-        RadialMenu inlineMenu = screen.getInlineMenu();
 
         if (RadialMenuConfig.showLabels) {
             drawCenteredString(getTitle(), layout.centerX, titleY, TEXT_COLOR);
         }
         if (editing) {
             drawCenteredString(
-                I18n.format(
-                    hovered == RadialLayout.CENTER ? "radialmenu.hint.shift_center" : "radialmenu.hint.shift_section"),
+                I18n.format(hovered.isSection() ? "radialmenu.hint.shift_section" : "radialmenu.hint.shift_center"),
                 layout.centerX,
                 hintY,
                 EDIT_COLOR);
         } else if (RadialMenuConfig.showLabels) {
-            if ((inlineHovered != RadialLayout.NONE) && (inlineMenu != null)) {
-                drawSectionLabel(inlineMenu.getSection(inlineHovered), layout.centerX, hintY);
-            } else if (hovered == RadialLayout.CENTER) {
-                drawCenteredString(getCenterHint(), layout.centerX, hintY, HINT_COLOR);
-            } else if (hovered != RadialLayout.NONE) {
+            if (hovered.isSection()) {
                 drawSectionLabel(
-                    screen.getMenu()
-                        .getSection(hovered),
+                    screen.getMenuAt(hovered.level)
+                        .getSection(hovered.index),
                     layout.centerX,
                     hintY);
+            } else {
+                drawCenteredString(getCenterHint(), layout.centerX, hintY, HINT_COLOR);
             }
         }
     }

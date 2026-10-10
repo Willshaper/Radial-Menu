@@ -20,9 +20,11 @@ are for developers.
 - Hold R to open the menu. Point at a section and left click to run it. Letting go of R closes the menu. With
   *Release to Select* on, letting go of R over a section also runs it.
 - Scroll or press Tab (Shift+Tab to go back) to switch between menus.
-- Sections can open submenus. Right click, or click the center, to go back. With *Inline Submenus* on, resting the
-  mouse on a submenu section for a moment also shows that submenu as a second ring outside the first, so its sections
-  can be used without clicking into it.
+- Sections can open submenus. Right click, or click the center, to go back.
+- With *Inline Submenus* on, a submenu never replaces the menu. Resting the mouse on a submenu section for a moment,
+  or clicking it, shows the submenu as a ring outside the ring the section is in. Submenus inside that ring open as
+  further rings, up to three, and the whole menu shrinks to make room for as many as it can open. Right click folds
+  away the outermost ring.
 - Shift + click a section to edit it. While Shift is held the hovered section gets a yellow edge and the text under
   the ring says the click will edit. Clicking an empty section also edits it.
 - Shift + click the center, or use the *Open Menu Manager* key (unbound by default), to manage menus.
@@ -60,6 +62,10 @@ Each section has a name, an icon and an action.
 The menu manager adds, renames, reorders and deletes menus, sets each menu's section count (2 to 24) and whether the
 switch key reaches it (*Switchable*). Menus that aren't switchable are only reachable as submenus and are marked with
 ↳ in the list. The arrows next to each section move it around the ring.
+
+To move sections to another menu, tick their boxes and click *Move to...*, then pick a menu or *+ New submenu*. They
+go into the first empty slots there, and its section count grows if needed. Hold Shift while picking to copy them
+instead.
 
 Lowering the section count hides sections without deleting them. If a hidden section still has something in it, the
 menu manager says which ones, so they aren't forgotten.

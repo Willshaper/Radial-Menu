@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +49,38 @@ class RadialMenuTest {
         assertTrue(
             menu.getSection(0)
                 .isEmpty());
+    }
+
+    @Test
+    void addedSectionsFillEmptySlotsAndGrowTheMenu() {
+        RadialMenu menu = new RadialMenu("a", "A", 3, true);
+        MenuSection home = command("/home");
+
+        menu.setSection(0, home);
+        menu.setSection(2, home);
+        assertEquals(3, menu.addSections(Arrays.asList(command("/a"), command("/b"), command("/c"))));
+        assertEquals(
+            "/a",
+            ((CommandAction) menu.getSection(1)
+                .getAction()).getCommand());
+        assertEquals(
+            "/c",
+            ((CommandAction) menu.getSection(4)
+                .getAction()).getCommand());
+        assertEquals(5, menu.getSectionCount());
+    }
+
+    @Test
+    void addingStopsWhenTheMenuIsFull() {
+        RadialMenu menu = new RadialMenu("a", "A", 8, true);
+        List<MenuSection> many = new ArrayList<>();
+
+        for (int i = 0; i < RadialMenu.MAX_SECTIONS + 5; i++) {
+            many.add(command("/" + i));
+        }
+        menu.setSection(0, command("/taken"));
+        assertEquals(RadialMenu.MAX_SECTIONS - 1, menu.addSections(many));
+        assertEquals(RadialMenu.MAX_SECTIONS, menu.getSectionCount());
     }
 
     @Test

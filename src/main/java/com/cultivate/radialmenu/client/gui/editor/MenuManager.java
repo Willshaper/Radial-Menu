@@ -1,6 +1,9 @@
 package com.cultivate.radialmenu.client.gui.editor;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
@@ -12,6 +15,7 @@ import net.minecraft.client.resources.I18n;
 import com.cleanroommc.modularui.api.IPanelHandler;
 import com.cleanroommc.modularui.api.drawable.IDrawable;
 import com.cleanroommc.modularui.api.drawable.IKey;
+import com.cleanroommc.modularui.api.widget.Interactable;
 import com.cleanroommc.modularui.drawable.GuiDraw;
 import com.cleanroommc.modularui.factory.ClientGUI;
 import com.cleanroommc.modularui.screen.ModularPanel;
@@ -37,7 +41,7 @@ import com.gtnewhorizon.gtnhlib.config.ConfigurationManager;
 
 /**
  * Lists every menu and edits the selected one: name, section count, whether the switch key reaches it, its colors,
- * and its sections.
+ * and its sections. Ticked sections can be moved or copied to another menu.
  *
  * <p>
  * Adding, removing or reordering menus reopens the screen so the menu list is rebuilt.
@@ -66,12 +70,36 @@ public final class MenuManager {
     // Drawn under each swatch so see-through colors look see-through.
     private static final int SWATCH_BACKDROP = 0xFF8B8B8B;
     private static final String SUBMENU_MARK = "↳ ";
+    private static final int CHECKBOX_WIDTH = 12;
+    private static final int CHECKBOX_SIZE = 8;
+    private static final int CHECKBOX_BORDER = 0xFFA0A0A0;
+    private static final int CHECKBOX_INSIDE = 0xFF202020;
+    private static final int MOVE_TO_WIDTH = 80;
 
     private final MenuStore store = RadialMenuClient.getMenuStore();
     private final RadialMenu selected;
     private ModularPanel panel;
     // Deleting takes two clicks so a menu isn't lost to a stray click.
     private boolean deleteArmed;
+    // Indexes of the ticked sections of the selected menu, in ring order.
+    private final Set<Integer> ticked = new TreeSet<>();
+    // What the last move or copy did, shown next to the Move to button.
+    private String moveResult = "";
+
+    /**
+     * A menu sections can be moved to, or a new menu made for them.
+     */
+    private static final class MoveTarget {
+
+        @Nullable
+        private final RadialMenu menu;
+        private final String label;
+
+        private MoveTarget(@Nullable RadialMenu menu, String label) {
+            this.menu = menu;
+            this.label = label;
+        }
+    }
 
     private MenuManager(RadialMenu selected) {
         this.selected = selected;
@@ -300,7 +328,115 @@ public final class MenuManager {
                     .widthRel(1f)
                     .expanded()
                     .collapseDisabledChild()
-                    .children(RadialMenu.MAX_SECTIONS, this::createSectionRow));
+                    .children(RadialMenu.MAX_SECTIONS, this::createSectionRow))
+            .child(
+                Flow.row()
+                    .widthRel(1f)
+                    .height(EditorWidgets.ROW_HEIGHT)
+                    .childPadding(4)
+                    .child(
+                        new ButtonWidget<>().width(MOVE_TO_WIDTH)
+                            .height(EditorWidgets.ROW_HEIGHT)
+                            .overlay(
+                                IKey.dynamic(
+                                    () -> I18n.format(
+                                        Interactable.hasShiftDown() ? "radialmenu.manager.copy_to"
+                                            : "radialmenu.manager.move_to",
+                                        getTickedSections().size())))
+                            .tooltip(tooltip -> tooltip.addLine(I18n.format("radialmenu.manager.move_tooltip")))
+                            .setEnabledIf(button -> !getTickedSections().isEmpty())
+                            .onMousePressed(mouseButton -> {
+                                openMoveTargetPicker();
+                                return true;
+                            }))
+                    .child(
+                        IKey.dynamic(this::getMoveHint)
+                            .color(EditorWidgets.HINT_COLOR)
+                            .alignment(Alignment.CenterLeft)
+                            .asWidget()
+                            .expanded()
+                            .heightRel(1f)));
+    }
+
+    private String getMoveHint() {
+        if (!moveResult.isEmpty()) {
+            return moveResult;
+        }
+        return getTickedSections().isEmpty() ? I18n.format("radialmenu.manager.tick_hint") : "";
+    }
+
+    /**
+     * @return the ticked sections that are shown and not empty, in ring order
+     */
+    private List<Integer> getTickedSections() {
+        List<Integer> sections = new ArrayList<>();
+
+        for (int index : ticked) {
+            if ((index < selected.getSectionCount()) && !selected.getSection(index)
+                .isEmpty()) {
+                sections.add(index);
+            }
+        }
+        return sections;
+    }
+
+    private void openMoveTargetPicker() {
+        List<MoveTarget> targets = new ArrayList<>();
+
+        targets.add(new MoveTarget(null, I18n.format("radialmenu.manager.new_menu_target")));
+        for (RadialMenu menu : store.getMenus()) {
+            if (menu != selected) {
+                targets.add(new MoveTarget(menu, menu.getName()));
+            }
+        }
+        IPanelHandler
+            .simple(
+                panel,
+                (parentPanel, player) -> new SearchListDialog<>(
+                    "move_target_picker",
+                    I18n.format("radialmenu.manager.pick_move_target"),
+                    targets,
+                    null,
+                    target -> target.label,
+                    null,
+                    target -> moveTickedSections(target.menu)),
+                true)
+            .openPanel();
+    }
+
+    /**
+     * Puts the ticked sections into the first empty slots of the target, or of a new submenu if the target is null.
+     * Holding Shift copies them; otherwise they are emptied here. Sections that don't fit stay where they are.
+     */
+    private void moveTickedSections(@Nullable RadialMenu target) {
+        List<Integer> indexes = getTickedSections();
+        List<MenuSection> sections = new ArrayList<>();
+        boolean copy = Interactable.hasShiftDown();
+        RadialMenu destination = target != null ? target
+            : store.createMenu(I18n.format("radialmenu.editor.default_submenu_name"), false);
+        int added;
+
+        for (int index : indexes) {
+            sections.add(selected.getSection(index));
+        }
+        added = destination.addSections(sections);
+        if (!copy) {
+            for (int index : indexes.subList(0, added)) {
+                selected.setSection(index, MenuSection.EMPTY);
+            }
+        }
+        ticked.clear();
+        store.save();
+        moveResult = I18n.format(
+            added < sections.size() ? "radialmenu.manager.moved_partly"
+                : copy ? "radialmenu.manager.copied" : "radialmenu.manager.moved",
+            added,
+            destination.getName(),
+            sections.size());
+        if (target == null) {
+            // The menu list on the left is built once, so it is rebuilt to show the new menu.
+            open(selected);
+        }
     }
 
     /**
@@ -361,6 +497,7 @@ public final class MenuManager {
             .height(LIST_ROW_HEIGHT)
             .childPadding(1)
             .setEnabledIf(row -> index < selected.getSectionCount())
+            .child(createCheckbox(index))
             .child(
                 new ButtonWidget<>().expanded()
                     .heightRel(1f)
@@ -372,6 +509,33 @@ public final class MenuManager {
                     }))
             .child(createMoveButton(index, -1, "▲"))
             .child(createMoveButton(index, 1, "▼"));
+    }
+
+    /**
+     * A box that ticks the section for moving to another menu.
+     */
+    private ButtonWidget<?> createCheckbox(int index) {
+        return new ButtonWidget<>().width(CHECKBOX_WIDTH)
+            .heightRel(1f)
+            .overlay((context, x, y, width, height, widgetTheme) -> {
+                int boxX = x + ((width - CHECKBOX_SIZE) / 2);
+                int boxY = y + ((height - CHECKBOX_SIZE) / 2);
+
+                GuiDraw.drawRect(boxX, boxY, CHECKBOX_SIZE, CHECKBOX_SIZE, CHECKBOX_BORDER);
+                GuiDraw.drawRect(
+                    boxX + 1,
+                    boxY + 1,
+                    CHECKBOX_SIZE - 2,
+                    CHECKBOX_SIZE - 2,
+                    ticked.contains(index) ? SELECTED_ACCENT : CHECKBOX_INSIDE);
+            })
+            .onMousePressed(mouseButton -> {
+                if (!ticked.remove(index)) {
+                    ticked.add(index);
+                }
+                moveResult = "";
+                return true;
+            });
     }
 
     private ButtonWidget<?> createMoveButton(int index, int offset, String arrow) {
@@ -397,6 +561,14 @@ public final class MenuManager {
             return;
         }
         selected.swapSections(index, target);
+        if (ticked.contains(index) != ticked.contains(target)) {
+            if (!ticked.remove(index)) {
+                ticked.add(index);
+            }
+            if (!ticked.remove(target)) {
+                ticked.add(target);
+            }
+        }
         store.save();
     }
 
