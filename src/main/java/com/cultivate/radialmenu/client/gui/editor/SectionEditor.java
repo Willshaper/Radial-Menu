@@ -181,7 +181,8 @@ public final class SectionEditor {
                 .onMousePressed(mouseButton -> {
                     icon = null;
                     return true;
-                }));
+                }))
+            .height(IconSlot.SIZE);
     }
 
     private void openIconPicker() {

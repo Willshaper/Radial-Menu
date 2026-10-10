@@ -25,7 +25,7 @@ import com.cultivate.radialmenu.menu.icon.SectionIcon;
  */
 final class IconSlot extends Widget<IconSlot> implements RecipeViewerGhostIngredientSlot<ItemStack>, Interactable {
 
-    private static final int SIZE = 18;
+    static final int SIZE = 18;
     private static final int ICON_SIZE = 16;
     private static final int RIGHT_BUTTON = 1;
 

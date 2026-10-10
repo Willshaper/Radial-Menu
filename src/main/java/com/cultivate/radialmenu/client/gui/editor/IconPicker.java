@@ -165,7 +165,7 @@ final class IconPicker extends Dialog<SectionIcon> {
         this.text = current instanceof TextIcon textIcon ? textIcon.getText() : "";
         size(WIDTH, HEIGHT);
         padding(PADDING);
-        setCloseOnOutOfBoundsClick(true);
+        // Not closed by clicks outside it: dragging an item from NEI starts with one.
         child(
             Flow.column()
                 .sizeRel(1f)
@@ -181,13 +181,19 @@ final class IconPicker extends Dialog<SectionIcon> {
                 .child(buildItemRow())
                 .child(buildImageRow())
                 .child(
-                    new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
-                        .showScrollShadows(false)
+                    // Always shown, so its expanded height can be worked out; the grid and the Text tab take turns
+                    // inside it.
+                    Flow.column()
                         .widthRel(1f)
                         .expanded()
-                        .child(grid)
-                        .setEnabledIf(list -> tab != Tab.TEXT))
-                .child(buildTextTab())
+                        .collapseDisabledChild()
+                        .child(
+                            new ListWidget<>().scrollDirection(EditorWidgets.verticalScrollbar())
+                                .showScrollShadows(false)
+                                .sizeRel(1f)
+                                .child(grid)
+                                .setEnabledIf(list -> tab != Tab.TEXT))
+                        .child(buildTextTab()))
                 .child(
                     Flow.row()
                         .widthRel(1f)
@@ -369,7 +375,7 @@ final class IconPicker extends Dialog<SectionIcon> {
     private Flow buildTextTab() {
         return Flow.column()
             .widthRel(1f)
-            .expanded()
+            .coverChildrenHeight()
             .childPadding(4)
             .setEnabledIf(column -> tab == Tab.TEXT)
             .child(
@@ -381,7 +387,8 @@ final class IconPicker extends Dialog<SectionIcon> {
                         .expanded()
                         .height(EditorWidgets.ROW_HEIGHT),
                     createColorSwatch().height(EditorWidgets.ROW_HEIGHT),
-                    new IconSlot(this::createTextIcon, stack -> closeWith(new ItemIcon(stack)), null)))
+                    new IconSlot(this::createTextIcon, stack -> closeWith(new ItemIcon(stack)), null))
+                    .height(IconSlot.SIZE))
             .child(
                 Flow.row()
                     .widthRel(1f)
